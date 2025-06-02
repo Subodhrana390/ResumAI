@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus, LanguagesIcon, ListPlus, GripVertical } from 'lucide-react';
+import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus, LanguagesIcon, ListPlus, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
 import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput } from '@/ai/flows/resume-improvement-suggestions';
 import { generateExperienceBulletPoints, type GenerateExperienceBulletPointsInput } from '@/ai/flows/experience-bullet-point-generation';
@@ -356,7 +356,7 @@ const CustomSectionsForm = ({ resume, updateField }: { resume: any, updateField:
     updateField('customSections', updatedSections);
   };
   
-  const updateCustomSectionItem = (sectionIndex: number, itemIndex: number, field: keyof ResumeCustomSectionItem, value: string) => {
+  const updateCustomSectionItemValue = (sectionIndex: number, itemIndex: number, field: keyof ResumeCustomSectionItem, value: string) => {
     const updatedSections = (resume.customSections || []).map((section: ResumeCustomSection, i: number) =>
       i === sectionIndex ? {
         ...section,
@@ -378,6 +378,29 @@ const CustomSectionsForm = ({ resume, updateField }: { resume: any, updateField:
     updateField('customSections', updatedSections);
   };
 
+  const moveCustomSectionItem = (sectionIndex: number, itemIndex: number, direction: 'up' | 'down') => {
+    const sections = [...(resume.customSections || [])];
+    const section = sections[sectionIndex];
+    if (!section) return;
+
+    const items = [...section.items];
+    const item = items[itemIndex];
+    if (!item) return;
+
+    const newIndex = direction === 'up' ? itemIndex - 1 : itemIndex + 1;
+
+    if (newIndex < 0 || newIndex >= items.length) return; // Invalid move
+
+    items.splice(itemIndex, 1); // Remove item from old position
+    items.splice(newIndex, 0, item); // Insert item into new position
+
+    const updatedSections = sections.map((s, i) =>
+      i === sectionIndex ? { ...s, items } : s
+    );
+    updateField('customSections', updatedSections);
+  };
+
+
   return (
     <Card>
       <CardHeader><CardTitle className="font-headline flex items-center gap-2"><ListPlus className="w-5 h-5 text-primary"/>Custom Sections</CardTitle></CardHeader>
@@ -395,15 +418,23 @@ const CustomSectionsForm = ({ resume, updateField }: { resume: any, updateField:
             </div>
             {section.items.map((item: ResumeCustomSectionItem, itemIndex: number) => (
               <Card key={item.id} className="p-3 space-y-2">
-                 <div className="flex items-center gap-2">
-                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                 <div className="flex items-start gap-2">
+                    <div className="flex flex-col items-center mt-1">
+                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab mb-2" />
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveCustomSectionItem(sectionIndex, itemIndex, 'up')} disabled={itemIndex === 0}>
+                            <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveCustomSectionItem(sectionIndex, itemIndex, 'down')} disabled={itemIndex === section.items.length - 1}>
+                            <ArrowDown className="h-4 w-4" />
+                        </Button>
+                    </div>
                     <div className="flex-grow space-y-2">
                         <div>
                         <Label htmlFor={`cs-${section.id}-item-${item.id}-content`}>Content</Label>
                         <Textarea 
                             id={`cs-${section.id}-item-${item.id}-content`}
                             value={item.content} 
-                            onChange={e => updateCustomSectionItem(sectionIndex, itemIndex, 'content', e.target.value)} 
+                            onChange={e => updateCustomSectionItemValue(sectionIndex, itemIndex, 'content', e.target.value)} 
                             placeholder="e.g., President's List, Photography" 
                             rows={2}
                         />
@@ -414,7 +445,7 @@ const CustomSectionsForm = ({ resume, updateField }: { resume: any, updateField:
                             <Input 
                             id={`cs-${section.id}-item-${item.id}-subcontent`}
                             value={item.subContent || ''} 
-                            onChange={e => updateCustomSectionItem(sectionIndex, itemIndex, 'subContent', e.target.value)} 
+                            onChange={e => updateCustomSectionItemValue(sectionIndex, itemIndex, 'subContent', e.target.value)} 
                             placeholder="e.g., XYZ University, Street Photography" 
                             />
                         </div>
@@ -423,7 +454,7 @@ const CustomSectionsForm = ({ resume, updateField }: { resume: any, updateField:
                             <Input 
                             id={`cs-${section.id}-item-${item.id}-date`}
                             value={item.date || ''} 
-                            onChange={e => updateCustomSectionItem(sectionIndex, itemIndex, 'date', e.target.value)} 
+                            onChange={e => updateCustomSectionItemValue(sectionIndex, itemIndex, 'date', e.target.value)} 
                             placeholder="e.g., Spring 2023, 2020 - Present" 
                             />
                         </div>
@@ -1105,3 +1136,4 @@ export default function ResumeEditorPage() {
   );
 }
 
+    
