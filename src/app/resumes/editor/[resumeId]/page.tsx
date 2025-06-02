@@ -10,10 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2 } from 'lucide-react';
+import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus } from 'lucide-react';
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
 import { tailorResume, type TailorResumeInput } from '@/ai/flows/job-description-tailoring';
 import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput } from '@/ai/flows/resume-improvement-suggestions';
+import { generateExperienceBulletPoints, type GenerateExperienceBulletPointsInput } from '@/ai/flows/experience-bullet-point-generation';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
@@ -44,13 +45,13 @@ const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field
   </Card>
 );
 
-const SummaryForm = ({ resume, updateField, generateAISummary, isLoadingAI }: { resume: any, updateField: (field: string, value: any) => void, generateAISummary: () => void, isLoadingAI: boolean }) => (
+const SummaryForm = ({ resume, updateField, generateAISummary, isLoadingAISummary }: { resume: any, updateField: (field: string, value: any) => void, generateAISummary: () => void, isLoadingAISummary: boolean }) => (
   <Card>
     <CardHeader>
       <div className="flex justify-between items-center">
         <CardTitle className="font-headline flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Professional Summary</CardTitle>
-        <Button variant="outline" size="sm" onClick={generateAISummary} disabled={isLoadingAI}>
-          <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAI ? 'Generating...' : 'Generate with AI'}
+        <Button variant="outline" size="sm" onClick={generateAISummary} disabled={isLoadingAISummary}>
+          <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAISummary ? 'Generating...' : 'Generate with AI'}
         </Button>
       </div>
     </CardHeader>
@@ -60,7 +61,9 @@ const SummaryForm = ({ resume, updateField, generateAISummary, isLoadingAI }: { 
   </Card>
 );
 
-const ExperienceForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => {
+const ExperienceForm = ({ resume, updateField, toast }: { resume: any, updateField: (field: string, value: any) => void, toast: any }) => {
+  const [loadingAIForExperienceId, setLoadingAIForExperienceId] = useState<string | null>(null);
+
   const addExperience = () => {
     const newExp: ResumeExperience = { id: uuidv4(), jobTitle: '', company: '', location: '', startDate: '', endDate: '', isCurrent: false, responsibilities: [''] };
     updateField('experience', [...resume.experience, newExp]);
@@ -85,6 +88,33 @@ const ExperienceForm = ({ resume, updateField }: { resume: any, updateField: (fi
     updateField('experience', updatedExp);
   };
 
+  const handleGenerateAIBulletPoints = async (expIndex: number) => {
+    const currentExperience = resume.experience[expIndex];
+    if (!currentExperience.jobTitle || !currentExperience.company) {
+        toast({ title: "Missing Information", description: "Please provide a Job Title and Company before generating bullet points.", variant: "destructive" });
+        return;
+    }
+    setLoadingAIForExperienceId(currentExperience.id);
+    try {
+      const input: GenerateExperienceBulletPointsInput = {
+        jobTitle: currentExperience.jobTitle,
+        company: currentExperience.company,
+        existingResponsibilities: currentExperience.responsibilities.filter(r => r.trim() !== ''),
+      };
+      const result = await generateExperienceBulletPoints(input);
+      if (result.generatedBulletPoints) {
+        updateExperience(expIndex, 'responsibilities', result.generatedBulletPoints);
+        toast({ title: "AI Bullet Points Generated!", description: "Responsibilities have been updated." });
+      }
+    } catch (error) {
+      console.error("AI Bullet Point generation failed:", error);
+      toast({ title: "Error", description: "Failed to generate AI bullet points.", variant: "destructive" });
+    } finally {
+      setLoadingAIForExperienceId(null);
+    }
+  };
+
+
   return (
   <Card>
     <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" />Work Experience</CardTitle></CardHeader>
@@ -102,10 +132,15 @@ const ExperienceForm = ({ resume, updateField }: { resume: any, updateField: (fi
            <div><Label>End Date</Label><Input type="month" value={exp.endDate} onChange={e => updateExperience(index, 'endDate', e.target.value)} disabled={exp.isCurrent} /><div className="flex items-center mt-1"><Input type="checkbox" checked={exp.isCurrent} onChange={e => updateExperience(index, 'isCurrent', e.target.checked)} className="w-4 h-4 mr-2" /><Label>Currently working here</Label></div></div>
            
           <div>
-            <Label>Responsibilities/Achievements</Label>
+            <div className="flex justify-between items-center mb-1">
+                <Label>Responsibilities/Achievements</Label>
+                <Button variant="outline" size="sm" onClick={() => handleGenerateAIBulletPoints(index)} disabled={loadingAIForExperienceId === exp.id}>
+                    <Sparkles className="mr-2 h-4 w-4" /> {loadingAIForExperienceId === exp.id ? 'Generating...' : 'AI Generate'}
+                </Button>
+            </div>
             {exp.responsibilities.map((resp, respIndex) => (
               <div key={respIndex} className="flex items-center gap-2 mt-1">
-                <Input value={resp} onChange={e => updateResponsibility(index, respIndex, e.target.value)} placeholder="Developed new features..." />
+                <Textarea value={resp} onChange={e => updateResponsibility(index, respIndex, e.target.value)} placeholder="Developed new features..." rows={2}/>
                 <Button variant="ghost" size="icon" onClick={() => removeResponsibility(index, respIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </div>
             ))}
@@ -274,43 +309,43 @@ export default function ResumeEditorPage() {
   const router = useRouter();
   const { activeResume, setActiveResumeById, updateActiveResume, saveActiveResume, createResume, resumes } = useResumeContext();
   const { toast } = useToast();
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isLoadingAISummary, setIsLoadingAISummary] = useState(false);
+  const [isLoadingAITailoring, setIsLoadingAITailoring] = useState(false);
   const [jobDescription, setJobDescription] = useState('');
   const [atsSuggestions, setAtsSuggestions] = useState<string[]>([]);
   
   const hasInitializedNewRef = useRef(false);
   const initialResumeIdPropRef = useRef(resumeId);
 
-  useEffect(() => {
+ useEffect(() => {
     let isMounted = true;
 
-    if (resumeId === 'new') {
-      if (initialResumeIdPropRef.current === 'new' && hasInitializedNewRef.current && activeResume?.id && activeResume.id !== defaultResumeData.id) {
-        // Already initialized and navigated, but resumeId prop might lag. Avoid re-creation.
-        return;
-      }
-      const initializeNewResume = async () => {
-        if (!hasInitializedNewRef.current) { // Ensure creation only happens once per 'new' visit
-          hasInitializedNewRef.current = true;
-          const newResume = await createResume();
-          if (isMounted && newResume?.id) {
-            router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
-          }
+    const initializeNewResume = async () => {
+        if (!hasInitializedNewRef.current) {
+            hasInitializedNewRef.current = true;
+            const newResume = await createResume();
+            if (isMounted && newResume?.id) {
+                router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
+            }
         }
-      };
-      initializeNewResume();
+    };
+
+    if (resumeId === 'new') {
+        if (initialResumeIdPropRef.current !== 'new' || (activeResume && activeResume.id !== defaultResumeData.id && activeResume.id !== '')) {
+             // Navigated away from 'new' or new resume already exists from this session
+        } else {
+            initializeNewResume();
+        }
     } else if (resumeId) {
-      if (!activeResume || activeResume.id !== resumeId) {
-        setActiveResumeById(resumeId);
-      }
+        if (!activeResume || activeResume.id !== resumeId) {
+            setActiveResumeById(resumeId);
+        }
     }
 
-    // Update initialResumeIdPropRef if resumeId actually changes
     if (initialResumeIdPropRef.current !== resumeId) {
         initialResumeIdPropRef.current = resumeId;
-        // If we navigated away from 'new', reset the flag
         if (resumeId !== 'new') {
-            hasInitializedNewRef.current = false;
+            hasInitializedNewRef.current = false; // Reset if navigating to an existing resume
         }
     }
     
@@ -322,13 +357,14 @@ export default function ResumeEditorPage() {
 
   const handleUpdateField = useCallback((fieldPath: string, value: any) => {
     updateActiveResume(prev => {
-      if (!prev) return defaultResumeData;
+      if (!prev) return defaultResumeData; // Should not happen if logic is correct
       const pathParts = fieldPath.split('.');
-      let current = { ...prev };
+      let current = { ...prev }; // Create a shallow copy
       let ref: any = current;
 
       for (let i = 0; i < pathParts.length - 1; i++) {
-        if (!ref[pathParts[i]]) ref[pathParts[i]] = {};
+        // Ensure nested objects exist and are new instances for immutability
+        ref[pathParts[i]] = { ...(ref[pathParts[i]] || {}) };
         ref = ref[pathParts[i]];
       }
       ref[pathParts[pathParts.length - 1]] = value;
@@ -344,7 +380,7 @@ export default function ResumeEditorPage() {
 
   const handleGenerateAISummary = async () => {
     if (!activeResume) return;
-    setIsLoadingAI(true);
+    setIsLoadingAISummary(true);
     try {
       const input: CareerSummaryInput = {
         experienceLevel: 'student', 
@@ -361,7 +397,7 @@ export default function ResumeEditorPage() {
       console.error("AI Summary generation failed:", error);
       toast({ title: "Error", description: "Failed to generate AI summary.", variant: "destructive" });
     } finally {
-      setIsLoadingAI(false);
+      setIsLoadingAISummary(false);
     }
   };
 
@@ -370,21 +406,21 @@ export default function ResumeEditorPage() {
       toast({ title: "Missing Information", description: "Please provide a job description.", variant: "destructive" });
       return;
     }
-    setIsLoadingAI(true);
+    setIsLoadingAITailoring(true);
     try {
       const suggestionInput: ResumeImprovementSuggestionsInput = {
-        resumeContent: `Summary: ${activeResume.summary}\nExperience: ${activeResume.experience.map(e=>e.jobTitle).join(', ')}`,
+        resumeContent: `Summary: ${activeResume.summary}\nExperience: ${activeResume.experience.map(e=>e.jobTitle).join(', ')}\nSkills: ${activeResume.skills.map(s=>s.name).join(', ')}`,
         jobDescription: jobDescription,
       };
       const suggestionsResult = await getResumeImprovementSuggestions(suggestionInput);
       setAtsSuggestions(suggestionsResult.suggestions);
 
-      toast({ title: "Resume Tailored (Suggestions Ready)!", description: "Check the ATS Checker tab for suggestions based on the job description." });
+      toast({ title: "Resume Analysis Complete!", description: "Check the ATS Checker tab for improvement suggestions based on the job description." });
     } catch (error) {
-      console.error("Resume tailoring failed:", error);
-      toast({ title: "Error", description: "Failed to tailor resume.", variant: "destructive" });
+      console.error("Resume tailoring/suggestion failed:", error);
+      toast({ title: "Error", description: "Failed to analyze resume.", variant: "destructive" });
     } finally {
-      setIsLoadingAI(false);
+      setIsLoadingAITailoring(false);
     }
   };
   
@@ -403,31 +439,34 @@ export default function ResumeEditorPage() {
           let imgHeight = pdfWidth / ratio;
           let currentPosition = 0;
           
-          if (imgHeight <= pdfHeight) {
+          if (imgHeight <= pdfHeight) { // Content fits on one page
             pdf.addImage(imgData, 'PNG', 0, currentPosition, pdfWidth, imgHeight);
-          } else {
-            let remainingHeight = canvasHeight * (pdfWidth / canvasWidth); // total scaled height in PDF units
+          } else { // Content spans multiple pages
             let yOffsetForCanvas = 0; // y-offset for cropping from the source canvas
+            const pagePixelHeight = canvasHeight * (pdfHeight / (imgHeight)); // Calculate pixel height for one PDF page on canvas
 
-            while (remainingHeight > 0) {
-              const pageCanvas = document.createElement('canvas');
-              pageCanvas.width = canvas.width;
-              pageCanvas.height = (pdfHeight / (pdfWidth / canvas.width)); // height of one PDF page in source canvas pixels
-              
-              const pageCtx = pageCanvas.getContext('2d');
-              if (pageCtx) {
-                 pageCtx.drawImage(canvas, 0, yOffsetForCanvas, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
-                 const pageImgData = pageCanvas.toDataURL('image/png');
-                 if (currentPosition > 0) {
-                   pdf.addPage();
-                 }
-                 pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                 yOffsetForCanvas += pageCanvas.height;
-                 remainingHeight -= pdfHeight;
-                 currentPosition += pdfHeight;
-              } else {
-                break; 
-              }
+            while (yOffsetForCanvas < canvasHeight) {
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = canvas.width;
+                // Ensure the crop does not exceed canvas bounds
+                pageCanvas.height = Math.min(pagePixelHeight, canvasHeight - yOffsetForCanvas); 
+                
+                const pageCtx = pageCanvas.getContext('2d');
+                if (pageCtx) {
+                    pageCtx.drawImage(canvas, 0, yOffsetForCanvas, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
+                    const pageImgData = pageCanvas.toDataURL('image/png');
+                    if (currentPosition > 0) { // Add new page for subsequent content
+                        pdf.addPage();
+                    }
+                    // Calculate the height of the image on this PDF page, maintaining aspect ratio
+                    const currentImgHeightOnPage = (pageCanvas.height / canvas.width) * pdfWidth; 
+                    pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, currentImgHeightOnPage);
+                    
+                    yOffsetForCanvas += pageCanvas.height;
+                    currentPosition += pdfHeight; // Arbitrary increment, actual position managed by addImage
+                } else {
+                    break; 
+                }
             }
           }
           pdf.save(`${activeResume.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
@@ -443,7 +482,7 @@ export default function ResumeEditorPage() {
   };
 
 
-  if (!activeResume && resumeId !== 'new') { // If it's 'new', we expect activeResume to be set soon by useEffect
+  if (!activeResume && resumeId !== 'new') { 
     return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">
@@ -455,8 +494,6 @@ export default function ResumeEditorPage() {
     );
   }
   
-  // Render a loading state or minimal UI if activeResume is null AND resumeId is 'new'
-  // This prevents trying to access activeResume.versionName etc. too early
   if (!activeResume && resumeId === 'new') {
      return (
       <AppShell>
@@ -468,8 +505,7 @@ export default function ResumeEditorPage() {
      );
   }
   
-  // After the 'new' resume is created and activeResume is set, this will render:
-  if (!activeResume) { // Should ideally not be reached if above conditions are met
+  if (!activeResume) {
     return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">
@@ -507,8 +543,8 @@ export default function ResumeEditorPage() {
                 </TabsList>
                 <TabsContent value="content" className="space-y-6">
                   <ContactForm resume={activeResume} updateField={handleUpdateField} />
-                  <SummaryForm resume={activeResume} updateField={handleUpdateField} generateAISummary={handleGenerateAISummary} isLoadingAI={isLoadingAI} />
-                  <ExperienceForm resume={activeResume} updateField={handleUpdateField} />
+                  <SummaryForm resume={activeResume} updateField={handleUpdateField} generateAISummary={handleGenerateAISummary} isLoadingAISummary={isLoadingAISummary} />
+                  <ExperienceForm resume={activeResume} updateField={handleUpdateField} toast={toast} />
                   <EducationForm resume={activeResume} updateField={handleUpdateField} />
                   <SkillsForm resume={activeResume} updateField={handleUpdateField} />
                 </TabsContent>
@@ -536,8 +572,8 @@ export default function ResumeEditorPage() {
                         <Label htmlFor="job-description">Job Description</Label>
                         <Textarea id="job-description" value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="Paste job description here..." rows={5} />
                       </div>
-                      <Button onClick={handleTailorResume} disabled={isLoadingAI}>
-                        <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAI ? 'Analyzing...' : 'Analyze & Get Suggestions'}
+                      <Button onClick={handleTailorResume} disabled={isLoadingAITailoring}>
+                        <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAITailoring ? 'Analyzing...' : 'Analyze & Get Suggestions'}
                       </Button>
                       {atsSuggestions.length > 0 && (
                         <div className="mt-4 p-4 bg-secondary rounded-md">
