@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus } from 'lucide-react';
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
-import { tailorResume, type TailorResumeInput } from '@/ai/flows/job-description-tailoring';
 import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput } from '@/ai/flows/resume-improvement-suggestions';
 import { generateExperienceBulletPoints, type GenerateExperienceBulletPointsInput } from '@/ai/flows/experience-bullet-point-generation';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +21,7 @@ import { ResumeContact, ResumeEducation, ResumeExperience, ResumeProject, Resume
 import { v4 as uuidv4 } from 'uuid';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { cn } from '@/lib/utils';
 
 // Sub-components for different resume sections
 const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => (
@@ -237,38 +237,42 @@ const SkillsForm = ({ resume, updateField }: { resume: any, updateField: (field:
 const ResumePreview = ({ resumeData }: { resumeData: any }) => {
   if (!resumeData) return <div className="p-8 bg-muted rounded-lg text-center text-muted-foreground">Select a resume to preview.</div>;
 
+  const templateClass = `template-${resumeData.template || 'classic'}`;
+
   return (
     <Card className="h-full shadow-lg">
-      <CardContent className="p-6 md:p-8 print-container" id="resume-preview-content">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold font-headline text-gray-800 dark:text-gray-100">{resumeData.contact.name || "Your Name"}</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            {resumeData.contact.email || "your.email@example.com"} | {resumeData.contact.phone || "(123) 456-7890"} | {resumeData.contact.address || "City, State"}
+      <CardContent className={cn("p-6 md:p-8 print-container", templateClass)} id="resume-preview-content">
+        <div className="resume-header text-center mb-6">
+          <h1>{resumeData.contact.name || "Your Name"}</h1>
+          <p>
+            {resumeData.contact.email || "your.email@example.com"}
+            {resumeData.contact.phone && ` | ${resumeData.contact.phone}`}
+            {resumeData.contact.address && resumeData.settings.showAddress && ` | ${resumeData.contact.address}`}
           </p>
-          { (resumeData.contact.linkedin || resumeData.contact.github || resumeData.contact.portfolio) && 
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+          { (resumeData.contact.linkedin || (resumeData.contact.github && resumeData.settings.showGithub) || (resumeData.contact.portfolio && resumeData.settings.showPortfolio)) && 
+            <p>
               {resumeData.contact.linkedin && <a href={resumeData.contact.linkedin} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.linkedin}</a>}
-              {resumeData.contact.github && <> | <a href={resumeData.contact.github} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.github}</a></>}
-              {resumeData.contact.portfolio && <> | <a href={resumeData.contact.portfolio} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.portfolio}</a></>}
+              {resumeData.contact.github && resumeData.settings.showGithub && <> | <a href={resumeData.contact.github} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.github}</a></>}
+              {resumeData.contact.portfolio && resumeData.settings.showPortfolio && <> | <a href={resumeData.contact.portfolio} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.portfolio}</a></>}
             </p>
           }
         </div>
 
         {resumeData.summary && (
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold font-headline border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2 text-gray-700 dark:text-gray-200">Summary</h2>
-            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{resumeData.summary}</p>
+          <div className="resume-section mb-4">
+            <h2 className="resume-section-title">Summary</h2>
+            <p className="resume-item-content whitespace-pre-line">{resumeData.summary}</p>
           </div>
         )}
 
         {resumeData.experience?.length > 0 && (
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold font-headline border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2 text-gray-700 dark:text-gray-200">Experience</h2>
+          <div className="resume-section mb-4">
+            <h2 className="resume-section-title">Experience</h2>
             {resumeData.experience.map((exp: ResumeExperience) => (
-              <div key={exp.id} className="mb-3">
-                <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200">{exp.jobTitle} - {exp.company}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{exp.location} | {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate}</p>
-                <ul className="list-disc list-inside ml-4 text-sm text-gray-700 dark:text-gray-300">
+              <div key={exp.id} className="resume-item mb-3">
+                <h3 className="resume-item-title">{exp.jobTitle} - {exp.company}</h3>
+                <p className="resume-item-subtitle">{exp.location} | {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate}</p>
+                <ul className="list-disc list-inside ml-4 resume-item-content">
                   {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
                 </ul>
               </div>
@@ -277,23 +281,23 @@ const ResumePreview = ({ resumeData }: { resumeData: any }) => {
         )}
         
          {resumeData.education?.length > 0 && (
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold font-headline border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2 text-gray-700 dark:text-gray-200">Education</h2>
+          <div className="resume-section mb-4">
+            <h2 className="resume-section-title">Education</h2>
             {resumeData.education.map((edu: ResumeEducation) => (
-              <div key={edu.id} className="mb-3">
-                <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200">{edu.degree} in {edu.fieldOfStudy} - {edu.institution}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{edu.startDate} - {edu.endDate} {edu.gpa && `| GPA: ${edu.gpa}`}</p>
+              <div key={edu.id} className="resume-item mb-3">
+                <h3 className="resume-item-title">{edu.degree} in {edu.fieldOfStudy} - {edu.institution}</h3>
+                <p className="resume-item-subtitle">{edu.startDate} - {edu.endDate} {edu.gpa && `| GPA: ${edu.gpa}`}</p>
               </div>
             ))}
           </div>
         )}
 
         {resumeData.skills?.length > 0 && (
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold font-headline border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2 text-gray-700 dark:text-gray-200">Skills</h2>
+          <div className="resume-section mb-4">
+            <h2 className="resume-section-title">Skills</h2>
             <div className="flex flex-wrap gap-2">
               {resumeData.skills.map((skill: ResumeSkill) => (
-                <span key={skill.id} className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-2 py-1 rounded text-xs">{skill.name} {skill.category && `(${skill.category})`}</span>
+                <span key={skill.id} className="resume-skill-badge">{skill.name} {skill.category && `(${skill.category})`}</span>
               ))}
             </div>
           </div>
@@ -307,7 +311,7 @@ const ResumePreview = ({ resumeData }: { resumeData: any }) => {
 export default function ResumeEditorPage() {
   const { resumeId } = useParams() as { resumeId: string };
   const router = useRouter();
-  const { activeResume, setActiveResumeById, updateActiveResume, saveActiveResume, createResume, resumes } = useResumeContext();
+  const { activeResume, setActiveResumeById, updateActiveResume, saveActiveResume, createResume } = useResumeContext();
   const { toast } = useToast();
   const [isLoadingAISummary, setIsLoadingAISummary] = useState(false);
   const [isLoadingAITailoring, setIsLoadingAITailoring] = useState(false);
@@ -322,48 +326,57 @@ export default function ResumeEditorPage() {
 
     const initializeNewResume = async () => {
         if (!hasInitializedNewRef.current) {
-            hasInitializedNewRef.current = true;
+            hasInitializedNewRef.current = true; // Set flag before async operation
             const newResume = await createResume();
             if (isMounted && newResume?.id) {
+                // Replace URL only after new resume is created and we have its ID
                 router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
             }
         }
     };
 
     if (resumeId === 'new') {
-        if (initialResumeIdPropRef.current !== 'new' || (activeResume && activeResume.id !== defaultResumeData.id && activeResume.id !== '')) {
-             // Navigated away from 'new' or new resume already exists from this session
-        } else {
+        // Only initialize if we haven't done so for this 'new' instance
+        // or if the activeResume is not the one we are trying to create.
+        if (!activeResume || (activeResume.id === defaultResumeData.id || activeResume.id === '')) {
+             initializeNewResume();
+        } else if (activeResume && activeResume.id !== defaultResumeData.id && !hasInitializedNewRef.current) {
+            // This case handles if the user navigates from an existing resume back to /new
+            // We should re-trigger initialization.
+            hasInitializedNewRef.current = false; // Reset for re-initialization
             initializeNewResume();
         }
     } else if (resumeId) {
+        // If resumeId is not 'new', load the specific resume
         if (!activeResume || activeResume.id !== resumeId) {
             setActiveResumeById(resumeId);
         }
+        // If we navigated from 'new' to a specific resume, reset the 'new' flag
+        if (initialResumeIdPropRef.current === 'new') {
+            hasInitializedNewRef.current = false;
+        }
     }
-
+    
+    // Update initialResumeIdPropRef if resumeId has changed from the prop
     if (initialResumeIdPropRef.current !== resumeId) {
         initialResumeIdPropRef.current = resumeId;
-        if (resumeId !== 'new') {
-            hasInitializedNewRef.current = false; // Reset if navigating to an existing resume
-        }
     }
     
     return () => {
       isMounted = false;
+      // Removed saveActiveResume from cleanup to prevent loops
     };
-  }, [resumeId, createResume, setActiveResumeById, router, activeResume?.id]);
+  }, [resumeId, createResume, setActiveResumeById, router, activeResume]);
 
 
   const handleUpdateField = useCallback((fieldPath: string, value: any) => {
     updateActiveResume(prev => {
-      if (!prev) return defaultResumeData; // Should not happen if logic is correct
+      if (!prev) return defaultResumeData; 
       const pathParts = fieldPath.split('.');
-      let current = { ...prev }; // Create a shallow copy
+      let current = { ...prev }; 
       let ref: any = current;
 
       for (let i = 0; i < pathParts.length - 1; i++) {
-        // Ensure nested objects exist and are new instances for immutability
         ref[pathParts[i]] = { ...(ref[pathParts[i]] || {}) };
         ref = ref[pathParts[i]];
       }
@@ -401,15 +414,42 @@ export default function ResumeEditorPage() {
     }
   };
 
-  const handleTailorResume = async () => {
+  const handleGetAtsSuggestions = async () => {
     if (!activeResume || !jobDescription) {
       toast({ title: "Missing Information", description: "Please provide a job description.", variant: "destructive" });
       return;
     }
     setIsLoadingAITailoring(true);
     try {
+      // Construct a more comprehensive resume content string for analysis
+      let resumeFullContent = `Name: ${activeResume.contact.name}\nEmail: ${activeResume.contact.email}\nPhone: ${activeResume.contact.phone}\n`;
+      if (activeResume.contact.linkedin) resumeFullContent += `LinkedIn: ${activeResume.contact.linkedin}\n`;
+      resumeFullContent += `\nSummary:\n${activeResume.summary}\n`;
+      
+      if (activeResume.experience.length > 0) {
+        resumeFullContent += `\nExperience:\n`;
+        activeResume.experience.forEach(exp => {
+          resumeFullContent += `- ${exp.jobTitle} at ${exp.company} (${exp.startDate} - ${exp.isCurrent ? 'Present' : exp.endDate})\n`;
+          exp.responsibilities.forEach(resp => {
+            resumeFullContent += `  - ${resp}\n`;
+          });
+        });
+      }
+
+      if (activeResume.education.length > 0) {
+        resumeFullContent += `\nEducation:\n`;
+        activeResume.education.forEach(edu => {
+          resumeFullContent += `- ${edu.degree} in ${edu.fieldOfStudy} from ${edu.institution} (${edu.startDate} - ${edu.endDate})\n`;
+        });
+      }
+
+      if (activeResume.skills.length > 0) {
+        resumeFullContent += `\nSkills:\n${activeResume.skills.map(s => s.name + (s.category ? ` (${s.category})` : '')).join(', ')}\n`;
+      }
+
+
       const suggestionInput: ResumeImprovementSuggestionsInput = {
-        resumeContent: `Summary: ${activeResume.summary}\nExperience: ${activeResume.experience.map(e=>e.jobTitle).join(', ')}\nSkills: ${activeResume.skills.map(s=>s.name).join(', ')}`,
+        resumeContent: resumeFullContent,
         jobDescription: jobDescription,
       };
       const suggestionsResult = await getResumeImprovementSuggestions(suggestionInput);
@@ -417,8 +457,8 @@ export default function ResumeEditorPage() {
 
       toast({ title: "Resume Analysis Complete!", description: "Check the ATS Checker tab for improvement suggestions based on the job description." });
     } catch (error) {
-      console.error("Resume tailoring/suggestion failed:", error);
-      toast({ title: "Error", description: "Failed to analyze resume.", variant: "destructive" });
+      console.error("Resume ATS suggestion failed:", error);
+      toast({ title: "Error", description: "Failed to analyze resume for ATS.", variant: "destructive" });
     } finally {
       setIsLoadingAITailoring(false);
     }
@@ -427,52 +467,78 @@ export default function ResumeEditorPage() {
   const handleDownloadPDF = () => {
     const resumeContentElement = document.getElementById('resume-preview-content');
     if (resumeContentElement && activeResume) {
-      html2canvas(resumeContentElement, { scale: 2 })
+      const originalWidth = resumeContentElement.style.width;
+      // Temporarily set width for consistent canvas rendering if needed, e.g. A4 aspect ratio
+      // resumeContentElement.style.width = '210mm'; 
+      
+      html2canvas(resumeContentElement, { 
+        scale: 2, // Increase scale for better quality
+        useCORS: true, // If you have external images
+        // width: resumeContentElement.scrollWidth, // Use scrollWidth for full content
+        // windowWidth: resumeContentElement.scrollWidth
+      })
         .then((canvas) => {
+          // resumeContentElement.style.width = originalWidth; // Reset width
+
           const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdf = new jsPDF('p', 'mm', 'a4'); // A4 dimensions: 210mm x 297mm
           const pdfWidth = pdf.internal.pageSize.getWidth();
           const pdfHeight = pdf.internal.pageSize.getHeight();
+          
           const canvasWidth = canvas.width;
           const canvasHeight = canvas.height;
-          const ratio = canvasWidth / canvasHeight;
-          let imgHeight = pdfWidth / ratio;
-          let currentPosition = 0;
           
-          if (imgHeight <= pdfHeight) { // Content fits on one page
-            pdf.addImage(imgData, 'PNG', 0, currentPosition, pdfWidth, imgHeight);
-          } else { // Content spans multiple pages
-            let yOffsetForCanvas = 0; // y-offset for cropping from the source canvas
-            const pagePixelHeight = canvasHeight * (pdfHeight / (imgHeight)); // Calculate pixel height for one PDF page on canvas
+          // Calculate the aspect ratio of the canvas content
+          const contentAspectRatio = canvasWidth / canvasHeight;
+          
+          let imgWidthOnPdf = pdfWidth;
+          let imgHeightOnPdf = pdfWidth / contentAspectRatio;
+          let yPosition = 0;
 
-            while (yOffsetForCanvas < canvasHeight) {
-                const pageCanvas = document.createElement('canvas');
-                pageCanvas.width = canvas.width;
-                // Ensure the crop does not exceed canvas bounds
-                pageCanvas.height = Math.min(pagePixelHeight, canvasHeight - yOffsetForCanvas); 
+          if (imgHeightOnPdf <= pdfHeight) {
+            // Content fits on one page or is shorter than one page
+            pdf.addImage(imgData, 'PNG', 0, yPosition, imgWidthOnPdf, imgHeightOnPdf);
+          } else {
+            // Content is taller than one page, needs to be split
+            let remainingCanvasHeight = canvasHeight;
+            let currentYCanvas = 0;
+
+            while (remainingCanvasHeight > 0) {
+              if (yPosition > 0) { // Check if it's not the first page
+                pdf.addPage();
+              }
+              // Calculate how much of the canvas height fits on one PDF page
+              const sourceHeightToCopy = Math.min(remainingCanvasHeight, canvasWidth * (pdfHeight/pdfWidth) );
+
+              const pageCanvas = document.createElement('canvas');
+              pageCanvas.width = canvasWidth;
+              pageCanvas.height = sourceHeightToCopy;
+              const pageCtx = pageCanvas.getContext('2d');
+              
+              if (pageCtx) {
+                // Crop the relevant part from the full canvas
+                pageCtx.drawImage(canvas, 0, currentYCanvas, canvasWidth, sourceHeightToCopy, 0, 0, canvasWidth, sourceHeightToCopy);
+                const pageImgData = pageCanvas.toDataURL('image/png');
                 
-                const pageCtx = pageCanvas.getContext('2d');
-                if (pageCtx) {
-                    pageCtx.drawImage(canvas, 0, yOffsetForCanvas, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
-                    const pageImgData = pageCanvas.toDataURL('image/png');
-                    if (currentPosition > 0) { // Add new page for subsequent content
-                        pdf.addPage();
-                    }
-                    // Calculate the height of the image on this PDF page, maintaining aspect ratio
-                    const currentImgHeightOnPage = (pageCanvas.height / canvas.width) * pdfWidth; 
-                    pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, currentImgHeightOnPage);
-                    
-                    yOffsetForCanvas += pageCanvas.height;
-                    currentPosition += pdfHeight; // Arbitrary increment, actual position managed by addImage
-                } else {
-                    break; 
-                }
+                // Add the cropped image to the PDF page
+                // The height of the image on PDF should maintain aspect ratio for this segment
+                const currentSegmentHeightOnPdf = (pageCanvas.height / pageCanvas.width) * pdfWidth;
+                pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, currentSegmentHeightOnPdf);
+
+                currentYCanvas += sourceHeightToCopy;
+                remainingCanvasHeight -= sourceHeightToCopy;
+                yPosition += pdfHeight; // Mark that we've used a page worth of space
+              } else {
+                console.error("Failed to get 2D context for page canvas");
+                break;
+              }
             }
           }
           pdf.save(`${activeResume.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
           toast({ title: "PDF Downloaded", description: "Your resume has been downloaded as a PDF." });
         })
         .catch(err => {
+          // resumeContentElement.style.width = originalWidth; // Reset width on error too
           console.error("Error generating PDF:", err);
           toast({ title: "PDF Generation Failed", description: "Could not generate PDF.", variant: "destructive" });
         });
@@ -494,7 +560,7 @@ export default function ResumeEditorPage() {
     );
   }
   
-  if (!activeResume && resumeId === 'new') {
+  if (!activeResume && resumeId === 'new' && !hasInitializedNewRef.current) {
      return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">
@@ -505,11 +571,11 @@ export default function ResumeEditorPage() {
      );
   }
   
-  if (!activeResume) {
+  if (!activeResume) { // Fallback if activeResume is somehow still null after 'new' handling
     return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">
-           <p className="text-xl text-muted-foreground font-semibold">Error: No active resume.</p>
+           <p className="text-xl text-muted-foreground font-semibold">Error: No active resume. Please try creating one or selecting from dashboard.</p>
            <Button onClick={() => router.push('/resumes')} className="mt-4">Go to Dashboard</Button>
         </div>
       </AppShell>
@@ -551,16 +617,16 @@ export default function ResumeEditorPage() {
                 <TabsContent value="design">
                   <Card>
                     <CardHeader><CardTitle className="font-headline">Design & Layout</CardTitle></CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">Template selection and customization options will be here.</p>
+                    <CardContent className="space-y-4">
                        <div>
                         <Label htmlFor="template-select">Template</Label>
-                        <select id="template-select" value={activeResume.template} onChange={e => handleUpdateField('template', e.target.value)} className="w-full p-2 border rounded">
+                        <select id="template-select" value={activeResume.template} onChange={e => handleUpdateField('template', e.target.value)} className="w-full p-2 border rounded bg-background text-foreground">
                             <option value="classic">Classic</option>
                             <option value="modern">Modern</option>
                             <option value="compact">Compact</option>
                         </select>
                        </div>
+                       <p className="text-muted-foreground text-sm">More customization options coming soon!</p>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -569,16 +635,16 @@ export default function ResumeEditorPage() {
                     <CardHeader><CardTitle className="font-headline">ATS Compatibility Check</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <Label htmlFor="job-description">Job Description</Label>
-                        <Textarea id="job-description" value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="Paste job description here..." rows={5} />
+                        <Label htmlFor="job-description">Job Description (Optional)</Label>
+                        <Textarea id="job-description" value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="Paste job description here for more targeted suggestions..." rows={5} />
                       </div>
-                      <Button onClick={handleTailorResume} disabled={isLoadingAITailoring}>
-                        <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAITailoring ? 'Analyzing...' : 'Analyze & Get Suggestions'}
+                      <Button onClick={handleGetAtsSuggestions} disabled={isLoadingAITailoring}>
+                        <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAITailoring ? 'Analyzing...' : 'Get ATS Suggestions'}
                       </Button>
                       {atsSuggestions.length > 0 && (
                         <div className="mt-4 p-4 bg-secondary rounded-md">
-                          <h3 className="font-semibold mb-2">Improvement Suggestions:</h3>
-                          <ul className="list-disc list-inside space-y-1 text-sm">
+                          <h3 className="font-semibold mb-2 text-secondary-foreground">Improvement Suggestions:</h3>
+                          <ul className="list-disc list-inside space-y-1 text-sm text-secondary-foreground/90">
                             {atsSuggestions.map((s, i) => <li key={i}>{s}</li>)}
                           </ul>
                         </div>
@@ -600,4 +666,3 @@ export default function ResumeEditorPage() {
     </AppShell>
   );
 }
-

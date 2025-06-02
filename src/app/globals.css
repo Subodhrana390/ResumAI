@@ -111,4 +111,95 @@ body {
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
+
+  /* Template Specific Styles */
+  .template-classic {
+    /* Default styles are effectively classic */
+  }
+  .template-classic .resume-header h1 {
+    @apply text-3xl font-bold text-gray-800 dark:text-gray-100;
+  }
+  .template-classic .resume-section-title {
+    @apply text-xl font-semibold border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2 text-gray-700 dark:text-gray-200;
+  }
+   .template-classic .resume-item-title {
+    @apply text-base font-semibold text-gray-700 dark:text-gray-200;
+  }
+  .template-classic .resume-item-subtitle {
+    @apply text-xs text-gray-500 dark:text-gray-400;
+  }
+  .template-classic .resume-item-content {
+     @apply text-sm text-gray-700 dark:text-gray-300;
+  }
+   .template-classic .resume-skill-badge {
+    @apply bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-2 py-1 rounded text-xs;
+  }
+
+
+  .template-modern .resume-header {
+    @apply text-left border-b-2 border-primary pb-4 mb-6;
+  }
+  .template-modern .resume-header h1 {
+    @apply text-4xl font-bold text-primary font-headline;
+  }
+  .template-modern .resume-header p {
+    @apply text-sm text-muted-foreground;
+  }
+  .template-modern .resume-section-title {
+    @apply text-lg font-bold uppercase tracking-wider text-primary mb-2 pt-2;
+  }
+  .template-modern .resume-item-title {
+    @apply text-base font-semibold text-foreground;
+  }
+  .template-modern .resume-item-subtitle {
+    @apply text-xs text-muted-foreground;
+  }
+   .template-modern .resume-item-content {
+     @apply text-sm text-foreground;
+  }
+  .template-modern .resume-item-content ul {
+    @apply list-none pl-0;
+  }
+  .template-modern .resume-item-content ul li {
+    @apply relative pl-4 before:content-['\2022'] before:absolute before:left-0 before:text-primary;
+  }
+  .template-modern .resume-skill-badge {
+    @apply bg-primary/20 text-primary-foreground px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+
+  .template-compact {
+    @apply text-xs;
+  }
+  .template-compact .resume-header h1 {
+    @apply text-2xl font-bold text-gray-800 dark:text-gray-100;
+  }
+  .template-compact .resume-header p {
+    @apply text-xs;
+  }
+  .template-compact .resume-section {
+    @apply mb-2;
+  }
+  .template-compact .resume-section-title {
+    @apply text-base font-semibold border-b border-gray-300 dark:border-gray-600 pb-0.5 mb-1 text-gray-700 dark:text-gray-200;
+  }
+  .template-compact .resume-item {
+    @apply mb-1.5;
+  }
+  .template-compact .resume-item-title {
+    @apply text-sm font-semibold text-gray-700 dark:text-gray-200;
+  }
+  .template-compact .resume-item-subtitle {
+    @apply text-xs text-gray-500 dark:text-gray-400; /* Custom tiny size, changed from text-2xs */
+  }
+   .template-compact .resume-item-content {
+     @apply text-xs text-gray-700 dark:text-gray-300;
+  }
+   .template-compact .resume-item-content ul {
+    @apply ml-3;
+  }
+  .template-compact .resume-skill-badge {
+    @apply bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs; /* Custom tiny size, changed from text-2xs */
+  }
+
 }
