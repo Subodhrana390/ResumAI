@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppShell } from '@/components/layout/app-shell';
 import { useResumeContext } from '@/contexts/resume-context';
-import { FilePlus, Edit3, Trash2, Copy, MoreVertical, Eye, Download } from 'lucide-react';
+import { FilePlus, Edit3, Trash2, Copy, MoreVertical, Eye, Download, FileText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
   DropdownMenu,
