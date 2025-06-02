@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image'; // Added Image import
 import { AppShell } from '@/components/layout/app-shell';
 import { useResumeContext } from '@/contexts/resume-context';
 import { Button } from '@/components/ui/button';
@@ -326,47 +327,40 @@ export default function ResumeEditorPage() {
 
     const initializeNewResume = async () => {
         if (!hasInitializedNewRef.current) {
-            hasInitializedNewRef.current = true; // Set flag before async operation
+            hasInitializedNewRef.current = true; 
             const newResume = await createResume();
             if (isMounted && newResume?.id) {
-                // Replace URL only after new resume is created and we have its ID
                 router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
             }
         }
     };
 
     if (resumeId === 'new') {
-        // Only initialize if we haven't done so for this 'new' instance
-        // or if the activeResume is not the one we are trying to create.
-        if (!activeResume || (activeResume.id === defaultResumeData.id || activeResume.id === '')) {
+        if (!activeResume || activeResume.id === defaultResumeData.id || activeResume.id === '' || activeResume.id !== initialResumeIdPropRef.current ) {
              initializeNewResume();
-        } else if (activeResume && activeResume.id !== defaultResumeData.id && !hasInitializedNewRef.current) {
-            // This case handles if the user navigates from an existing resume back to /new
-            // We should re-trigger initialization.
-            hasInitializedNewRef.current = false; // Reset for re-initialization
-            initializeNewResume();
         }
     } else if (resumeId) {
-        // If resumeId is not 'new', load the specific resume
         if (!activeResume || activeResume.id !== resumeId) {
             setActiveResumeById(resumeId);
         }
-        // If we navigated from 'new' to a specific resume, reset the 'new' flag
-        if (initialResumeIdPropRef.current === 'new') {
+         if (initialResumeIdPropRef.current === 'new' && activeResume?.id === resumeId) {
+            hasInitializedNewRef.current = true; 
+        } else if (initialResumeIdPropRef.current !== 'new' && resumeId !== initialResumeIdPropRef.current) {
+             hasInitializedNewRef.current = false;
+        }
+    }
+    
+    if (initialResumeIdPropRef.current !== resumeId) {
+        initialResumeIdPropRef.current = resumeId;
+         if(resumeId !== 'new') { // Reset flag if we navigate away from a specific resume to 'new' or another specific one
             hasInitializedNewRef.current = false;
         }
     }
     
-    // Update initialResumeIdPropRef if resumeId has changed from the prop
-    if (initialResumeIdPropRef.current !== resumeId) {
-        initialResumeIdPropRef.current = resumeId;
-    }
-    
     return () => {
       isMounted = false;
-      // Removed saveActiveResume from cleanup to prevent loops
     };
-  }, [resumeId, createResume, setActiveResumeById, router, activeResume]);
+  }, [resumeId, createResume, setActiveResumeById, router, activeResume?.id ]);
 
 
   const handleUpdateField = useCallback((fieldPath: string, value: any) => {
@@ -421,7 +415,6 @@ export default function ResumeEditorPage() {
     }
     setIsLoadingAITailoring(true);
     try {
-      // Construct a more comprehensive resume content string for analysis
       let resumeFullContent = `Name: ${activeResume.contact.name}\nEmail: ${activeResume.contact.email}\nPhone: ${activeResume.contact.phone}\n`;
       if (activeResume.contact.linkedin) resumeFullContent += `LinkedIn: ${activeResume.contact.linkedin}\n`;
       resumeFullContent += `\nSummary:\n${activeResume.summary}\n`;
@@ -447,7 +440,6 @@ export default function ResumeEditorPage() {
         resumeFullContent += `\nSkills:\n${activeResume.skills.map(s => s.name + (s.category ? ` (${s.category})` : '')).join(', ')}\n`;
       }
 
-
       const suggestionInput: ResumeImprovementSuggestionsInput = {
         resumeContent: resumeFullContent,
         jobDescription: jobDescription,
@@ -468,27 +460,20 @@ export default function ResumeEditorPage() {
     const resumeContentElement = document.getElementById('resume-preview-content');
     if (resumeContentElement && activeResume) {
       const originalWidth = resumeContentElement.style.width;
-      // Temporarily set width for consistent canvas rendering if needed, e.g. A4 aspect ratio
-      // resumeContentElement.style.width = '210mm'; 
       
       html2canvas(resumeContentElement, { 
-        scale: 2, // Increase scale for better quality
-        useCORS: true, // If you have external images
-        // width: resumeContentElement.scrollWidth, // Use scrollWidth for full content
-        // windowWidth: resumeContentElement.scrollWidth
+        scale: 2, 
+        useCORS: true, 
       })
         .then((canvas) => {
-          // resumeContentElement.style.width = originalWidth; // Reset width
-
           const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4'); // A4 dimensions: 210mm x 297mm
+          const pdf = new jsPDF('p', 'mm', 'a4'); 
           const pdfWidth = pdf.internal.pageSize.getWidth();
           const pdfHeight = pdf.internal.pageSize.getHeight();
           
           const canvasWidth = canvas.width;
           const canvasHeight = canvas.height;
           
-          // Calculate the aspect ratio of the canvas content
           const contentAspectRatio = canvasWidth / canvasHeight;
           
           let imgWidthOnPdf = pdfWidth;
@@ -496,18 +481,15 @@ export default function ResumeEditorPage() {
           let yPosition = 0;
 
           if (imgHeightOnPdf <= pdfHeight) {
-            // Content fits on one page or is shorter than one page
             pdf.addImage(imgData, 'PNG', 0, yPosition, imgWidthOnPdf, imgHeightOnPdf);
           } else {
-            // Content is taller than one page, needs to be split
             let remainingCanvasHeight = canvasHeight;
             let currentYCanvas = 0;
 
             while (remainingCanvasHeight > 0) {
-              if (yPosition > 0) { // Check if it's not the first page
+              if (yPosition > 0) { 
                 pdf.addPage();
               }
-              // Calculate how much of the canvas height fits on one PDF page
               const sourceHeightToCopy = Math.min(remainingCanvasHeight, canvasWidth * (pdfHeight/pdfWidth) );
 
               const pageCanvas = document.createElement('canvas');
@@ -516,18 +498,15 @@ export default function ResumeEditorPage() {
               const pageCtx = pageCanvas.getContext('2d');
               
               if (pageCtx) {
-                // Crop the relevant part from the full canvas
                 pageCtx.drawImage(canvas, 0, currentYCanvas, canvasWidth, sourceHeightToCopy, 0, 0, canvasWidth, sourceHeightToCopy);
                 const pageImgData = pageCanvas.toDataURL('image/png');
                 
-                // Add the cropped image to the PDF page
-                // The height of the image on PDF should maintain aspect ratio for this segment
                 const currentSegmentHeightOnPdf = (pageCanvas.height / pageCanvas.width) * pdfWidth;
                 pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, currentSegmentHeightOnPdf);
 
                 currentYCanvas += sourceHeightToCopy;
                 remainingCanvasHeight -= sourceHeightToCopy;
-                yPosition += pdfHeight; // Mark that we've used a page worth of space
+                yPosition += pdfHeight; 
               } else {
                 console.error("Failed to get 2D context for page canvas");
                 break;
@@ -538,7 +517,6 @@ export default function ResumeEditorPage() {
           toast({ title: "PDF Downloaded", description: "Your resume has been downloaded as a PDF." });
         })
         .catch(err => {
-          // resumeContentElement.style.width = originalWidth; // Reset width on error too
           console.error("Error generating PDF:", err);
           toast({ title: "PDF Generation Failed", description: "Could not generate PDF.", variant: "destructive" });
         });
@@ -571,7 +549,7 @@ export default function ResumeEditorPage() {
      );
   }
   
-  if (!activeResume) { // Fallback if activeResume is somehow still null after 'new' handling
+  if (!activeResume) { 
     return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">
@@ -582,6 +560,11 @@ export default function ResumeEditorPage() {
     );
   }
 
+  const templateOptions = [
+    { id: 'classic', name: 'Classic', imageUrl: 'https://placehold.co/150x200.png?text=Classic+Design', description: "A timeless, traditional layout.", dataAiHint: "classic resume" },
+    { id: 'modern', name: 'Modern', imageUrl: 'https://placehold.co/150x200.png?text=Modern+Design', description: "A sleek, contemporary style.", dataAiHint: "modern resume" },
+    { id: 'compact', name: 'Compact', imageUrl: 'https://placehold.co/150x200.png?text=Compact+Design', description: "A space-saving, concise format.", dataAiHint: "compact resume" },
+  ];
 
   return (
     <AppShell>
@@ -616,17 +599,35 @@ export default function ResumeEditorPage() {
                 </TabsContent>
                 <TabsContent value="design">
                   <Card>
-                    <CardHeader><CardTitle className="font-headline">Design & Layout</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Choose a Template</CardTitle>
+                        <CardDescription>Select a style that best fits your profile.</CardDescription>
+                    </CardHeader>
                     <CardContent className="space-y-4">
-                       <div>
-                        <Label htmlFor="template-select">Template</Label>
-                        <select id="template-select" value={activeResume.template} onChange={e => handleUpdateField('template', e.target.value)} className="w-full p-2 border rounded bg-background text-foreground">
-                            <option value="classic">Classic</option>
-                            <option value="modern">Modern</option>
-                            <option value="compact">Compact</option>
-                        </select>
+                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {templateOptions.map((template) => (
+                            <div
+                                key={template.id}
+                                onClick={() => handleUpdateField('template', template.id)}
+                                className={cn(
+                                    "border rounded-lg p-3 cursor-pointer hover:shadow-xl transition-all duration-200 ease-in-out transform hover:scale-105",
+                                    activeResume.template === template.id ? "ring-2 ring-primary shadow-2xl scale-105" : "border-border hover:border-primary/50"
+                                )}
+                                >
+                                <Image 
+                                    src={template.imageUrl} 
+                                    alt={`${template.name} template preview`} 
+                                    width={150} 
+                                    height={200} 
+                                    className="w-full h-auto rounded-md mb-3 object-cover aspect-[3/4]" 
+                                    data-ai-hint={template.dataAiHint}
+                                />
+                                <h4 className="font-semibold text-center text-sm mb-1">{template.name}</h4>
+                                <p className="text-xs text-muted-foreground text-center leading-tight">{template.description}</p>
+                            </div>
+                        ))}
                        </div>
-                       <p className="text-muted-foreground text-sm">More customization options coming soon!</p>
+                       <p className="text-muted-foreground text-sm mt-6">More customization options like font and color coming soon!</p>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -666,3 +667,4 @@ export default function ResumeEditorPage() {
     </AppShell>
   );
 }
+
