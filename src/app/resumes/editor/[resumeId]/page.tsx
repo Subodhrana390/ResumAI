@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus } from 'lucide-react';
+import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus, LanguagesIcon, ListPlus, GripVertical } from 'lucide-react';
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
 import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput } from '@/ai/flows/resume-improvement-suggestions';
 import { generateExperienceBulletPoints, type GenerateExperienceBulletPointsInput } from '@/ai/flows/experience-bullet-point-generation';
@@ -19,7 +19,7 @@ import { suggestSkills, type SuggestSkillsInput } from '@/ai/flows/skill-suggest
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
-import { ResumeContact, ResumeEducation, ResumeExperience, ResumeProject, ResumeSkill, defaultResumeData } from '@/types/resume';
+import { ResumeContact, ResumeEducation, ResumeExperience, ResumeProject, ResumeSkill, ResumeLanguage, ResumeCustomSection, ResumeCustomSectionItem, defaultResumeData } from '@/types/resume';
 import { v4 as uuidv4 } from 'uuid';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -239,7 +239,7 @@ const SkillsForm = ({ resume, updateField, toast, jobDescriptionForAISkills }: {
             const skillsToAdd: ResumeSkill[] = uniqueNewSkills.map((skillName: string) => ({
                 id: uuidv4(),
                 name: skillName,
-                category: undefined, // User can categorize later
+                category: undefined, 
             }));
 
             if (skillsToAdd.length > 0) {
@@ -284,6 +284,159 @@ const SkillsForm = ({ resume, updateField, toast, jobDescriptionForAISkills }: {
             </div>
           ))}
         </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const LanguagesForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => {
+  const addLanguage = () => {
+    const newLang: ResumeLanguage = { id: uuidv4(), name: '', proficiency: '' };
+    updateField('languages', [...(resume.languages || []), newLang]);
+  };
+
+  const updateLanguage = (index: number, field: keyof ResumeLanguage, value: string) => {
+    const updatedLangs = (resume.languages || []).map((lang: ResumeLanguage, i: number) => 
+      i === index ? { ...lang, [field]: value } : lang
+    );
+    updateField('languages', updatedLangs);
+  };
+
+  const removeLanguage = (index: number) => {
+    updateField('languages', (resume.languages || []).filter((_: any, i: number) => i !== index));
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="font-headline flex items-center gap-2"><LanguagesIcon className="w-5 h-5 text-primary"/>Languages</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        {(resume.languages || []).map((lang: ResumeLanguage, index: number) => (
+          <Card key={lang.id} className="p-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor={`lang-name-${lang.id}`}>Language</Label>
+                <Input id={`lang-name-${lang.id}`} value={lang.name} onChange={e => updateLanguage(index, 'name', e.target.value)} placeholder="e.g., Spanish" />
+              </div>
+              <div>
+                <Label htmlFor={`lang-prof-${lang.id}`}>Proficiency (Optional)</Label>
+                <Input id={`lang-prof-${lang.id}`} value={lang.proficiency || ''} onChange={e => updateLanguage(index, 'proficiency', e.target.value)} placeholder="e.g., Fluent, Conversational" />
+              </div>
+            </div>
+            <Button variant="destructive" size="sm" onClick={() => removeLanguage(index)}>Remove Language</Button>
+          </Card>
+        ))}
+        <Button onClick={addLanguage}>Add Language</Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+const CustomSectionsForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => {
+  const addCustomSection = () => {
+    const newSection: ResumeCustomSection = { id: uuidv4(), title: 'New Section', items: [] };
+    updateField('customSections', [...(resume.customSections || []), newSection]);
+  };
+
+  const updateCustomSectionTitle = (sectionIndex: number, title: string) => {
+    const updatedSections = (resume.customSections || []).map((section: ResumeCustomSection, i: number) =>
+      i === sectionIndex ? { ...section, title } : section
+    );
+    updateField('customSections', updatedSections);
+  };
+
+  const removeCustomSection = (sectionIndex: number) => {
+    updateField('customSections', (resume.customSections || []).filter((_:any, i: number) => i !== sectionIndex));
+  };
+
+  const addCustomSectionItem = (sectionIndex: number) => {
+    const newItem: ResumeCustomSectionItem = { id: uuidv4(), content: '', subContent: '', date: '' };
+    const updatedSections = (resume.customSections || []).map((section: ResumeCustomSection, i: number) =>
+      i === sectionIndex ? { ...section, items: [...section.items, newItem] } : section
+    );
+    updateField('customSections', updatedSections);
+  };
+  
+  const updateCustomSectionItem = (sectionIndex: number, itemIndex: number, field: keyof ResumeCustomSectionItem, value: string) => {
+    const updatedSections = (resume.customSections || []).map((section: ResumeCustomSection, i: number) =>
+      i === sectionIndex ? {
+        ...section,
+        items: section.items.map((item, j: number) =>
+          j === itemIndex ? { ...item, [field]: value } : item
+        )
+      } : section
+    );
+    updateField('customSections', updatedSections);
+  };
+
+  const removeCustomSectionItem = (sectionIndex: number, itemIndex: number) => {
+    const updatedSections = (resume.customSections || []).map((section: ResumeCustomSection, i: number) =>
+      i === sectionIndex ? {
+        ...section,
+        items: section.items.filter((_: any, j: number) => j !== itemIndex)
+      } : section
+    );
+    updateField('customSections', updatedSections);
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="font-headline flex items-center gap-2"><ListPlus className="w-5 h-5 text-primary"/>Custom Sections</CardTitle></CardHeader>
+      <CardContent className="space-y-6">
+        {(resume.customSections || []).map((section: ResumeCustomSection, sectionIndex: number) => (
+          <Card key={section.id} className="p-4 space-y-4 bg-muted/30">
+            <div className="flex justify-between items-center">
+              <Input 
+                value={section.title} 
+                onChange={e => updateCustomSectionTitle(sectionIndex, e.target.value)} 
+                placeholder="Section Title (e.g., Achievements, Hobbies)"
+                className="text-lg font-semibold flex-grow mr-2"
+              />
+              <Button variant="destructive" size="sm" onClick={() => removeCustomSection(sectionIndex)}>Remove Section</Button>
+            </div>
+            {section.items.map((item: ResumeCustomSectionItem, itemIndex: number) => (
+              <Card key={item.id} className="p-3 space-y-2">
+                 <div className="flex items-center gap-2">
+                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                    <div className="flex-grow space-y-2">
+                        <div>
+                        <Label htmlFor={`cs-${section.id}-item-${item.id}-content`}>Content</Label>
+                        <Textarea 
+                            id={`cs-${section.id}-item-${item.id}-content`}
+                            value={item.content} 
+                            onChange={e => updateCustomSectionItem(sectionIndex, itemIndex, 'content', e.target.value)} 
+                            placeholder="e.g., President's List, Photography" 
+                            rows={2}
+                        />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                            <Label htmlFor={`cs-${section.id}-item-${item.id}-subcontent`}>Sub-content (Optional)</Label>
+                            <Input 
+                            id={`cs-${section.id}-item-${item.id}-subcontent`}
+                            value={item.subContent || ''} 
+                            onChange={e => updateCustomSectionItem(sectionIndex, itemIndex, 'subContent', e.target.value)} 
+                            placeholder="e.g., XYZ University, Street Photography" 
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor={`cs-${section.id}-item-${item.id}-date`}>Date (Optional)</Label>
+                            <Input 
+                            id={`cs-${section.id}-item-${item.id}-date`}
+                            value={item.date || ''} 
+                            onChange={e => updateCustomSectionItem(sectionIndex, itemIndex, 'date', e.target.value)} 
+                            placeholder="e.g., Spring 2023, 2020 - Present" 
+                            />
+                        </div>
+                        </div>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => removeCustomSectionItem(sectionIndex, itemIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                 </div>
+              </Card>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => addCustomSectionItem(sectionIndex)}>Add Item to "{section.title}"</Button>
+          </Card>
+        ))}
+        <Button onClick={addCustomSection}>Add Custom Section</Button>
       </CardContent>
     </Card>
   );
@@ -360,6 +513,39 @@ const ResumePreview = ({ resumeData }: { resumeData: any }) => {
             </div>
           </div>
         )}
+
+        {resumeData.languages?.length > 0 && (
+          <div className="resume-section">
+            <h2 className="resume-section-title">Languages</h2>
+             <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {resumeData.languages.map((lang: ResumeLanguage) => (
+                <p key={lang.id} className="resume-item-content">
+                  <span className="font-semibold">{lang.name}</span>
+                  {lang.proficiency && <span className="text-muted-foreground"> ({lang.proficiency})</span>}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {resumeData.customSections?.length > 0 && resumeData.customSections.map((section: ResumeCustomSection) => (
+          <div key={section.id} className="resume-section">
+            <h2 className="resume-section-title">{section.title}</h2>
+            {section.items.map((item: ResumeCustomSectionItem) => (
+              <div key={item.id} className="resume-item">
+                 <h3 className="resume-item-title">{item.content}</h3>
+                 { (item.subContent || item.date) && 
+                    <p className="resume-item-subtitle">
+                        {item.subContent}
+                        {item.subContent && item.date && " | "}
+                        {item.date}
+                    </p>
+                 }
+              </div>
+            ))}
+          </div>
+        ))}
+
       </CardContent>
     </Card>
   );
@@ -496,6 +682,20 @@ export default function ResumeEditorPage() {
       if (activeResume.skills.length > 0) {
         resumeFullContent += `\nSkills:\n${activeResume.skills.map(s => s.name + (s.category ? ` (${s.category})` : '')).join(', ')}\n`;
       }
+      
+      if (activeResume.languages.length > 0) {
+        resumeFullContent += `\nLanguages:\n${activeResume.languages.map(l => l.name + (l.proficiency ? ` (${l.proficiency})` : '')).join(', ')}\n`;
+      }
+
+      if (activeResume.customSections.length > 0) {
+        activeResume.customSections.forEach(section => {
+            resumeFullContent += `\n${section.title}:\n`;
+            section.items.forEach(item => {
+                resumeFullContent += `- ${item.content}${item.subContent ? ` (${item.subContent})` : ''}${item.date ? ` [${item.date}]` : ''}\n`;
+            });
+        });
+      }
+
 
       const suggestionInput: ResumeImprovementSuggestionsInput = {
         resumeContent: resumeFullContent,
@@ -653,6 +853,8 @@ export default function ResumeEditorPage() {
                   <ExperienceForm resume={activeResume} updateField={handleUpdateField} toast={toast} />
                   <EducationForm resume={activeResume} updateField={handleUpdateField} />
                   <SkillsForm resume={activeResume} updateField={handleUpdateField} toast={toast} jobDescriptionForAISkills={jobDescription} />
+                  <LanguagesForm resume={activeResume} updateField={handleUpdateField} />
+                  <CustomSectionsForm resume={activeResume} updateField={handleUpdateField} />
                 </TabsContent>
                 <TabsContent value="design">
                   <Card>

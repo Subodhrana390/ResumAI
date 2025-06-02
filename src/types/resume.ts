@@ -25,15 +25,15 @@ export interface ResumeEducation {
   institution: string;
   degree: string;
   fieldOfStudy: string;
-  startDate: string; // Added startDate for education
-  endDate: string; // Renamed from graduationDate for consistency
+  startDate: string;
+  endDate: string;
   gpa?: string;
 }
 
 export interface ResumeSkill {
   id: string;
   name: string;
-  category?: string; // e.g., Programming Languages, Tools, Soft Skills
+  category?: string;
 }
 
 export interface ResumeProject {
@@ -46,22 +46,35 @@ export interface ResumeProject {
   endDate?: string;
 }
 
+export interface ResumeLanguage {
+  id: string;
+  name: string;
+  proficiency?: string; // e.g., Native, Fluent, Conversational, Basic
+}
+
+export interface ResumeCustomSectionItem {
+  id: string;
+  content: string;
+  subContent?: string;
+  date?: string;
+}
 export interface ResumeCustomSection {
   id: string;
   title: string;
-  items: Array<{ id: string, content: string, subContent?: string, date?: string }>;
+  items: ResumeCustomSectionItem[];
 }
 
 export interface ResumeData {
   id: string;
   versionName: string;
-  template: string; // Identifier for the template, e.g., 'classic', 'modern'
+  template: string;
   contact: ResumeContact;
   summary: string;
   experience: ResumeExperience[];
   education: ResumeEducation[];
   skills: ResumeSkill[];
   projects: ResumeProject[];
+  languages: ResumeLanguage[];
   customSections: ResumeCustomSection[];
   meta: {
     jobDescription?: string;
@@ -71,8 +84,8 @@ export interface ResumeData {
   };
   settings: {
     fontFamily: string;
-    fontSize: string; // e.g. 'text-sm', 'text-base'
-    accentColor: string; // hex value
+    fontSize: string;
+    accentColor: string;
     showAddress: boolean;
     showGithub: boolean;
     showPortfolio: boolean;
@@ -97,6 +110,7 @@ export const defaultResumeData: ResumeData = {
   education: [],
   skills: [],
   projects: [],
+  languages: [],
   customSections: [],
   meta: {
     lastModified: new Date().toISOString(),
@@ -104,7 +118,7 @@ export const defaultResumeData: ResumeData = {
   settings: {
     fontFamily: 'Inter',
     fontSize: 'text-sm',
-    accentColor: '#A7D1E8', // Default to primary color
+    accentColor: '#A7D1E8', 
     showAddress: true,
     showGithub: true,
     showPortfolio: true,
