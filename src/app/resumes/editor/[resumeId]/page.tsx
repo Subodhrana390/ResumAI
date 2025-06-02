@@ -856,69 +856,103 @@ export default function ResumeEditorPage() {
     }
   };
   
-  const handleDownloadPDF = () => {
+ const handleDownloadPDF = () => {
     const resumeContentElement = document.getElementById('resume-preview-content');
     if (resumeContentElement && activeResume) {
-      const originalWidth = resumeContentElement.style.width;
-      
-      html2canvas(resumeContentElement, { 
-        scale: 2, 
-        useCORS: true, 
-      })
-        .then((canvas) => {
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4'); 
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          
-          const canvasWidth = canvas.width;
-          const canvasHeight = canvas.height;
-          
-          const contentAspectRatio = canvasWidth / canvasHeight;
-          
-          let imgWidthOnPdf = pdfWidth;
-          let imgHeightOnPdf = pdfWidth / contentAspectRatio;
-          let yPosition = 0;
+        const html2canvasScale = 2; // Scale for html2canvas rendering
+        const targetPdfDpi = 96; // Target effective DPI on PDF
+        const marginPoints = 36; // 0.5 inch margin in points (1 inch = 72 points)
 
-          if (imgHeightOnPdf <= pdfHeight) {
-            pdf.addImage(imgData, 'PNG', 0, yPosition, imgWidthOnPdf, imgHeightOnPdf);
-          } else {
-            let remainingCanvasHeight = canvasHeight;
-            let currentYCanvas = 0;
+        html2canvas(resumeContentElement, {
+            scale: html2canvasScale,
+            useCORS: true,
+            logging: false, // reduce console noise
+        }).then((sourceCanvas) => {
+            const pdf = new jsPDF('p', 'pt', 'a4'); // Use points as units
 
-            while (remainingCanvasHeight > 0) {
-              if (yPosition > 0) { 
-                pdf.addPage();
-              }
-              const sourceHeightToCopy = Math.min(remainingCanvasHeight, canvasWidth * (pdfHeight/pdfWidth) );
+            const browserContentWidthPx = resumeContentElement.offsetWidth;
+            
+            // Calculate target width on PDF based on browser width and target DPI
+            const targetContentWidthInches = browserContentWidthPx / targetPdfDpi;
+            let targetImageWidthOnPdfPoints = targetContentWidthInches * 72;
 
-              const pageCanvas = document.createElement('canvas');
-              pageCanvas.width = canvasWidth;
-              pageCanvas.height = sourceHeightToCopy;
-              const pageCtx = pageCanvas.getContext('2d');
-              
-              if (pageCtx) {
-                pageCtx.drawImage(canvas, 0, currentYCanvas, canvasWidth, sourceHeightToCopy, 0, 0, canvasWidth, sourceHeightToCopy);
-                const pageImgData = pageCanvas.toDataURL('image/png');
-                
-                const currentSegmentHeightOnPdf = (pageCanvas.height / pageCanvas.width) * pdfWidth;
-                pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, currentSegmentHeightOnPdf);
+            const pagePointsWidth = pdf.internal.pageSize.getWidth();
+            const pagePointsHeight = pdf.internal.pageSize.getHeight();
 
-                currentYCanvas += sourceHeightToCopy;
-                remainingCanvasHeight -= sourceHeightToCopy;
-                yPosition += pdfHeight; 
-              } else {
-                console.error("Failed to get 2D context for page canvas");
-                break;
-              }
+            const effectivePagePointsWidth = pagePointsWidth - 2 * marginPoints;
+            const effectivePagePointsHeight = pagePointsHeight - 2 * marginPoints;
+
+            // Adjust targetImageWidth if it's wider than effective page width
+            if (targetImageWidthOnPdfPoints > effectivePagePointsWidth) {
+                targetImageWidthOnPdfPoints = effectivePagePointsWidth;
             }
-          }
-          pdf.save(`${activeResume.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
-          toast({ title: "PDF Downloaded", description: "Your resume has been downloaded as a PDF." });
-        })
-        .catch(err => {
-          console.error("Error generating PDF:", err);
-          toast({ title: "PDF Generation Failed", description: "Could not generate PDF.", variant: "destructive" });
+
+            const sourceCanvasWidth = sourceCanvas.width;
+            const sourceCanvasHeight = sourceCanvas.height;
+            const imageAspectRatio = sourceCanvasWidth / sourceCanvasHeight;
+            
+            const totalImageHeightOnPdfPoints = targetImageWidthOnPdfPoints / imageAspectRatio;
+            
+            const xOffset = marginPoints;
+            const yOffset = marginPoints;
+
+            if (totalImageHeightOnPdfPoints <= effectivePagePointsHeight) {
+                // Single page scenario
+                const imgData = sourceCanvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', xOffset, yOffset, targetImageWidthOnPdfPoints, totalImageHeightOnPdfPoints);
+            } else {
+                // Multi-page scenario
+                let currentYCanvasOnSource = 0;
+                let remainingSourceCanvasHeight = sourceCanvasHeight;
+                
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = sourceCanvasWidth;
+                // Height of the canvas chunk that corresponds to one PDF page's content area height
+                const canvasChunkHeightForOnePage = sourceCanvasWidth * effectivePagePointsHeight / targetImageWidthOnPdfPoints;
+                pageCanvas.height = canvasChunkHeightForOnePage; 
+                const pageCtx = pageCanvas.getContext('2d');
+
+                while (remainingSourceCanvasHeight > 0) {
+                    const currentChunkActualCanvasHeight = Math.min(canvasChunkHeightForOnePage, remainingSourceCanvasHeight);
+                    
+                    if (pageCanvas.height !== currentChunkActualCanvasHeight) {
+                         pageCanvas.height = currentChunkActualCanvasHeight; // Adjust if last chunk is smaller
+                    }
+
+                    if (pageCtx) {
+                        pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+                        pageCtx.drawImage(
+                            sourceCanvas,
+                            0, currentYCanvasOnSource, // Source x, y
+                            sourceCanvasWidth, currentChunkActualCanvasHeight, // Source width, height
+                            0, 0, // Destination x, y on pageCanvas
+                            sourceCanvasWidth, currentChunkActualCanvasHeight  // Destination width, height on pageCanvas
+                        );
+                        const pageSegmentImgData = pageCanvas.toDataURL('image/png');
+                        
+                        // Calculate the height this segment will occupy on the PDF page
+                        const segmentHeightOnPdf = currentChunkActualCanvasHeight * targetImageWidthOnPdfPoints / sourceCanvasWidth;
+                        
+                        pdf.addImage(pageSegmentImgData, 'PNG', xOffset, yOffset, targetImageWidthOnPdfPoints, segmentHeightOnPdf);
+
+                        currentYCanvasOnSource += currentChunkActualCanvasHeight;
+                        remainingSourceCanvasHeight -= currentChunkActualCanvasHeight;
+
+                        if (remainingSourceCanvasHeight > 0) {
+                            pdf.addPage();
+                        }
+                    } else {
+                        console.error("Failed to get 2D context for page canvas segment.");
+                        toast({ title: "PDF Error", description: "Could not process page segment for PDF.", variant: "destructive" });
+                        return; // Exit if context fails
+                    }
+                }
+            }
+            pdf.save(`${activeResume.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
+            toast({ title: "PDF Downloaded", description: "Your resume has been downloaded." });
+        }).catch(err => {
+            console.error("Error generating PDF with html2canvas:", err);
+            toast({ title: "PDF Generation Failed", description: "Could not generate PDF.", variant: "destructive" });
         });
     } else {
        toast({ title: "Error", description: "Resume content not found for PDF generation.", variant: "destructive" });
