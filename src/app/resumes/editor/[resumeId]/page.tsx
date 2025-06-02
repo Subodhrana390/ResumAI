@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image'; // Added Image import
+import Image from 'next/image';
 import { AppShell } from '@/components/layout/app-shell';
 import { useResumeContext } from '@/contexts/resume-context';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, Ch
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
 import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput } from '@/ai/flows/resume-improvement-suggestions';
 import { generateExperienceBulletPoints, type GenerateExperienceBulletPointsInput } from '@/ai/flows/experience-bullet-point-generation';
+import { suggestSkills, type SuggestSkillsInput } from '@/ai/flows/skill-suggestion-flow';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
@@ -196,14 +197,18 @@ const EducationForm = ({ resume, updateField }: { resume: any, updateField: (fie
   );
 };
 
-const SkillsForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => {
+const SkillsForm = ({ resume, updateField, toast, jobDescriptionForAISkills }: { resume: any, updateField: (field: string, value: any) => void, toast: any, jobDescriptionForAISkills: string }) => {
   const [newSkill, setNewSkill] = useState('');
   const [newSkillCategory, setNewSkillCategory] = useState('');
+  const [isLoadingAISkills, setIsLoadingAISkills] = useState(false);
 
   const addSkill = () => {
     if (!newSkill.trim()) return;
     const skill: ResumeSkill = { id: uuidv4(), name: newSkill.trim(), category: newSkillCategory.trim() || undefined };
-    updateField('skills', [...resume.skills, skill]);
+    const currentSkills = resume.skills || [];
+    if (!currentSkills.some((s: ResumeSkill) => s.name.toLowerCase() === skill.name.toLowerCase())) {
+      updateField('skills', [...currentSkills, skill]);
+    }
     setNewSkill('');
     setNewSkillCategory('');
   };
@@ -212,9 +217,59 @@ const SkillsForm = ({ resume, updateField }: { resume: any, updateField: (field:
     updateField('skills', resume.skills.filter((s: ResumeSkill) => s.id !== id));
   };
 
+  const handleGenerateAISkills = async () => {
+    if (!resume.experience?.[0]?.jobTitle && !jobDescriptionForAISkills) {
+       toast({ title: "Missing Information", description: "Please provide a Job Title in experience or a Job Description in ATS tab for AI skill suggestions.", variant: "destructive" });
+       return;
+    }
+    setIsLoadingAISkills(true);
+    try {
+        const input: SuggestSkillsInput = {
+            jobTitle: resume.experience?.[0]?.jobTitle || "Candidate", 
+            existingSkills: resume.skills.map((s: ResumeSkill) => s.name),
+            jobDescription: jobDescriptionForAISkills || undefined,
+        };
+        const result = await suggestSkills(input);
+        if (result.suggestedSkills && result.suggestedSkills.length > 0) {
+            const currentSkills = resume.skills || [];
+            const uniqueNewSkills = result.suggestedSkills.filter(
+                (suggestedSkill: string) => !currentSkills.some((existingSkill: ResumeSkill) => existingSkill.name.toLowerCase() === suggestedSkill.toLowerCase())
+            );
+            
+            const skillsToAdd: ResumeSkill[] = uniqueNewSkills.map((skillName: string) => ({
+                id: uuidv4(),
+                name: skillName,
+                category: undefined, // User can categorize later
+            }));
+
+            if (skillsToAdd.length > 0) {
+                 updateField('skills', [...currentSkills, ...skillsToAdd]);
+                 toast({ title: "AI Skills Suggested!", description: `${skillsToAdd.length} new skills have been added to your list.` });
+            } else {
+                 toast({ title: "No New Skills", description: "AI couldn't find any new skills to suggest based on current information." });
+            }
+        } else {
+           toast({ title: "No Skills Suggested", description: "AI did not return any skill suggestions.", variant: "default" });
+        }
+    } catch (error) {
+        console.error("AI Skill suggestion failed:", error);
+        toast({ title: "Error", description: "Failed to suggest AI skills.", variant: "destructive" });
+    } finally {
+        setIsLoadingAISkills(false);
+    }
+  };
+
+
   return (
     <Card>
-      <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary"/>Skills</CardTitle></CardHeader>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+            <CardTitle className="font-headline flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary"/>Skills</CardTitle>
+            <Button variant="outline" size="sm" onClick={handleGenerateAISkills} disabled={isLoadingAISkills}>
+                <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAISkills ? 'Suggesting...' : 'AI Suggest Skills'}
+            </Button>
+        </div>
+      </CardHeader>
       <CardContent>
         <div className="flex gap-2 mb-4">
           <Input value={newSkill} onChange={e => setNewSkill(e.target.value)} placeholder="Add a skill (e.g., JavaScript)" />
@@ -243,7 +298,7 @@ const ResumePreview = ({ resumeData }: { resumeData: any }) => {
   return (
     <Card className="h-full shadow-lg">
       <CardContent className={cn("p-6 md:p-8 print-container", templateClass)} id="resume-preview-content">
-        <div className="resume-header text-center mb-6">
+        <div className="resume-header">
           <h1>{resumeData.contact.name || "Your Name"}</h1>
           <p>
             {resumeData.contact.email || "your.email@example.com"}
@@ -260,32 +315,34 @@ const ResumePreview = ({ resumeData }: { resumeData: any }) => {
         </div>
 
         {resumeData.summary && (
-          <div className="resume-section mb-4">
+          <div className="resume-section">
             <h2 className="resume-section-title">Summary</h2>
             <p className="resume-item-content whitespace-pre-line">{resumeData.summary}</p>
           </div>
         )}
 
         {resumeData.experience?.length > 0 && (
-          <div className="resume-section mb-4">
+          <div className="resume-section">
             <h2 className="resume-section-title">Experience</h2>
             {resumeData.experience.map((exp: ResumeExperience) => (
-              <div key={exp.id} className="resume-item mb-3">
+              <div key={exp.id} className="resume-item">
                 <h3 className="resume-item-title">{exp.jobTitle} - {exp.company}</h3>
                 <p className="resume-item-subtitle">{exp.location} | {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate}</p>
-                <ul className="list-disc list-inside ml-4 resume-item-content">
-                  {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
-                </ul>
+                <div className="resume-item-content">
+                  <ul>
+                    {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
+                  </ul>
+                </div>
               </div>
             ))}
           </div>
         )}
         
          {resumeData.education?.length > 0 && (
-          <div className="resume-section mb-4">
+          <div className="resume-section">
             <h2 className="resume-section-title">Education</h2>
             {resumeData.education.map((edu: ResumeEducation) => (
-              <div key={edu.id} className="resume-item mb-3">
+              <div key={edu.id} className="resume-item">
                 <h3 className="resume-item-title">{edu.degree} in {edu.fieldOfStudy} - {edu.institution}</h3>
                 <p className="resume-item-subtitle">{edu.startDate} - {edu.endDate} {edu.gpa && `| GPA: ${edu.gpa}`}</p>
               </div>
@@ -294,7 +351,7 @@ const ResumePreview = ({ resumeData }: { resumeData: any }) => {
         )}
 
         {resumeData.skills?.length > 0 && (
-          <div className="resume-section mb-4">
+          <div className="resume-section">
             <h2 className="resume-section-title">Skills</h2>
             <div className="flex flex-wrap gap-2">
               {resumeData.skills.map((skill: ResumeSkill) => (
@@ -352,7 +409,7 @@ export default function ResumeEditorPage() {
     
     if (initialResumeIdPropRef.current !== resumeId) {
         initialResumeIdPropRef.current = resumeId;
-         if(resumeId !== 'new') { // Reset flag if we navigate away from a specific resume to 'new' or another specific one
+         if(resumeId !== 'new') { 
             hasInitializedNewRef.current = false;
         }
     }
@@ -595,7 +652,7 @@ export default function ResumeEditorPage() {
                   <SummaryForm resume={activeResume} updateField={handleUpdateField} generateAISummary={handleGenerateAISummary} isLoadingAISummary={isLoadingAISummary} />
                   <ExperienceForm resume={activeResume} updateField={handleUpdateField} toast={toast} />
                   <EducationForm resume={activeResume} updateField={handleUpdateField} />
-                  <SkillsForm resume={activeResume} updateField={handleUpdateField} />
+                  <SkillsForm resume={activeResume} updateField={handleUpdateField} toast={toast} jobDescriptionForAISkills={jobDescription} />
                 </TabsContent>
                 <TabsContent value="design">
                   <Card>
@@ -667,4 +724,3 @@ export default function ResumeEditorPage() {
     </AppShell>
   );
 }
-
