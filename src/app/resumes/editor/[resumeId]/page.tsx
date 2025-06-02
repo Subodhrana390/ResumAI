@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { useResumeContext } from '@/contexts/resume-context';
@@ -9,18 +10,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info } from 'lucide-react';
+import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2 } from 'lucide-react';
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
 import { tailorResume, type TailorResumeInput } from '@/ai/flows/job-description-tailoring';
 import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput } from '@/ai/flows/resume-improvement-suggestions';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
-import { ResumeContact, ResumeEducation, ResumeExperience, ResumeProject, ResumeSkill } from '@/types/resume';
+import { ResumeContact, ResumeEducation, ResumeExperience, ResumeProject, ResumeSkill, defaultResumeData } from '@/types/resume';
 import { v4 as uuidv4 } from 'uuid';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { defaultResumeData } from '@/types/resume'; // Import defaultResumeData
 
 // Sub-components for different resume sections
 const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => (
@@ -111,7 +111,7 @@ const ExperienceForm = ({ resume, updateField }: { resume: any, updateField: (fi
             ))}
             <Button variant="outline" size="sm" onClick={() => addResponsibility(index)} className="mt-2">Add Responsibility</Button>
           </div>
-          <Button variant="destructive" outline size="sm" onClick={() => removeExperience(index)}>Remove Experience</Button>
+          <Button variant="destructive" size="sm" onClick={() => removeExperience(index)}>Remove Experience</Button>
         </Card>
       ))}
       <Button onClick={addExperience}>Add Experience</Button>
@@ -120,7 +120,6 @@ const ExperienceForm = ({ resume, updateField }: { resume: any, updateField: (fi
   );
 };
 
-// Placeholder for other forms: Education, Skills, Projects
 const EducationForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => {
    const addEducation = () => {
     const newEdu: ResumeEducation = { id: uuidv4(), institution: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '', gpa: '' };
@@ -152,7 +151,7 @@ const EducationForm = ({ resume, updateField }: { resume: any, updateField: (fie
             <div><Label>Start Date</Label><Input type="month" value={edu.startDate} onChange={e => updateEducation(index, 'startDate', e.target.value)} /></div>
             <div><Label>End Date / Graduation</Label><Input type="month" value={edu.endDate} onChange={e => updateEducation(index, 'endDate', e.target.value)} /></div>
           </div>
-          <Button variant="destructive" outline size="sm" onClick={() => removeEducation(index)}>Remove Education</Button>
+          <Button variant="destructive" size="sm" onClick={() => removeEducation(index)}>Remove Education</Button>
         </Card>
       ))}
       <Button onClick={addEducation}>Add Education</Button>
@@ -203,7 +202,6 @@ const SkillsForm = ({ resume, updateField }: { resume: any, updateField: (field:
 const ResumePreview = ({ resumeData }: { resumeData: any }) => {
   if (!resumeData) return <div className="p-8 bg-muted rounded-lg text-center text-muted-foreground">Select a resume to preview.</div>;
 
-  // Basic template rendering logic
   return (
     <Card className="h-full shadow-lg">
       <CardContent className="p-6 md:p-8 print-container" id="resume-preview-content">
@@ -243,7 +241,6 @@ const ResumePreview = ({ resumeData }: { resumeData: any }) => {
           </div>
         )}
         
-        {/* Placeholder for Education, Skills, etc. */}
          {resumeData.education?.length > 0 && (
           <div className="mb-4">
             <h2 className="text-xl font-semibold font-headline border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2 text-gray-700 dark:text-gray-200">Education</h2>
@@ -275,42 +272,63 @@ const ResumePreview = ({ resumeData }: { resumeData: any }) => {
 export default function ResumeEditorPage() {
   const { resumeId } = useParams() as { resumeId: string };
   const router = useRouter();
-  const { activeResume, setActiveResumeById, updateActiveResume, saveActiveResume, createResume } = useResumeContext();
+  const { activeResume, setActiveResumeById, updateActiveResume, saveActiveResume, createResume, resumes } = useResumeContext();
   const { toast } = useToast();
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [jobDescription, setJobDescription] = useState('');
   const [atsSuggestions, setAtsSuggestions] = useState<string[]>([]);
+  
+  const hasInitializedNewRef = useRef(false);
+  const initialResumeIdPropRef = useRef(resumeId);
 
   useEffect(() => {
+    let isMounted = true;
+
     if (resumeId === 'new') {
-      const initializeNewResume = async () => {
-        const newResume = await createResume();
-        // router.replace might be better if createResume handles navigation or returns id for it
-        // For now, this assumes createResume sets it active and returns it.
-        // If createResume doesn't push to history, we might need to do it here.
-        // This is slightly complex with async context updates.
-        // A simpler flow: if 'new', context creates one, then redirect.
-        // For now, let's assume createResume handles setting activeResume.
-        if(newResume?.id) router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
+      if (initialResumeIdPropRef.current === 'new' && hasInitializedNewRef.current && activeResume?.id && activeResume.id !== defaultResumeData.id) {
+        // Already initialized and navigated, but resumeId prop might lag. Avoid re-creation.
+        return;
       }
+      const initializeNewResume = async () => {
+        if (!hasInitializedNewRef.current) { // Ensure creation only happens once per 'new' visit
+          hasInitializedNewRef.current = true;
+          const newResume = await createResume();
+          if (isMounted && newResume?.id) {
+            router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
+          }
+        }
+      };
       initializeNewResume();
     } else if (resumeId) {
-      setActiveResumeById(resumeId);
+      if (!activeResume || activeResume.id !== resumeId) {
+        setActiveResumeById(resumeId);
+      }
     }
+
+    // Update initialResumeIdPropRef if resumeId actually changes
+    if (initialResumeIdPropRef.current !== resumeId) {
+        initialResumeIdPropRef.current = resumeId;
+        // If we navigated away from 'new', reset the flag
+        if (resumeId !== 'new') {
+            hasInitializedNewRef.current = false;
+        }
+    }
+    
     return () => {
-       if (activeResume) saveActiveResume(); // Save on unmount/route change
-    }
-  }, [resumeId, setActiveResumeById, createResume, router, activeResume, saveActiveResume]);
+      isMounted = false;
+    };
+  }, [resumeId, createResume, setActiveResumeById, router, activeResume?.id]);
+
 
   const handleUpdateField = useCallback((fieldPath: string, value: any) => {
     updateActiveResume(prev => {
-      if (!prev) return defaultResumeData; // Should not happen if activeResume is set
+      if (!prev) return defaultResumeData;
       const pathParts = fieldPath.split('.');
       let current = { ...prev };
       let ref: any = current;
 
       for (let i = 0; i < pathParts.length - 1; i++) {
-        if (!ref[pathParts[i]]) ref[pathParts[i]] = {}; // Create intermediate objects if they don't exist
+        if (!ref[pathParts[i]]) ref[pathParts[i]] = {};
         ref = ref[pathParts[i]];
       }
       ref[pathParts[pathParts.length - 1]] = value;
@@ -328,10 +346,9 @@ export default function ResumeEditorPage() {
     if (!activeResume) return;
     setIsLoadingAI(true);
     try {
-      // For fresher, we can simplify the input
       const input: CareerSummaryInput = {
-        experienceLevel: 'student', // Assuming fresher
-        jobTitle: activeResume.experience[0]?.jobTitle || 'Entry-level role', // Use first job title or generic
+        experienceLevel: 'student', 
+        jobTitle: activeResume.experience[0]?.jobTitle || 'Entry-level role',
         skills: activeResume.skills.map(s => s.name).join(', '),
         experienceSummary: activeResume.experience.map(e => `${e.jobTitle} at ${e.company}: ${e.responsibilities.join('. ')}`).join('\n'),
       };
@@ -355,24 +372,8 @@ export default function ResumeEditorPage() {
     }
     setIsLoadingAI(true);
     try {
-      const input: TailorResumeInput = {
-        resume: JSON.stringify(activeResume), // Or a stringified version of key parts
-        jobDescription,
-      };
-      const result = await tailorResume(input);
-      // This AI flow returns a full tailored resume string. We'd need to parse it or use it differently.
-      // For now, let's assume it gives suggestions or updates the summary as an example.
-      // A more robust solution would involve parsing the tailoredResume string and updating fields.
-      // For this example, let's update the summary.
-      // A better approach might be for tailorResume to return structured data or specific section updates.
-      // Let's assume it returns a new summary for simplicity here.
-      // This is a placeholder for how to integrate, the actual data flow needs refinement based on AI output.
-      // For a real app, the AI flow would need to be designed to output structured updates.
-      // Here, we'll just display the raw tailored resume as a suggestion.
-      
-      // Let's use getResumeImprovementSuggestions instead for a more direct update
       const suggestionInput: ResumeImprovementSuggestionsInput = {
-        resumeContent: `Summary: ${activeResume.summary}\nExperience: ${activeResume.experience.map(e=>e.jobTitle).join(', ')}`, // simplified content
+        resumeContent: `Summary: ${activeResume.summary}\nExperience: ${activeResume.experience.map(e=>e.jobTitle).join(', ')}`,
         jobDescription: jobDescription,
       };
       const suggestionsResult = await getResumeImprovementSuggestions(suggestionInput);
@@ -390,7 +391,7 @@ export default function ResumeEditorPage() {
   const handleDownloadPDF = () => {
     const resumeContentElement = document.getElementById('resume-preview-content');
     if (resumeContentElement && activeResume) {
-      html2canvas(resumeContentElement, { scale: 2 }) // Increase scale for better quality
+      html2canvas(resumeContentElement, { scale: 2 })
         .then((canvas) => {
           const imgData = canvas.toDataURL('image/png');
           const pdf = new jsPDF('p', 'mm', 'a4');
@@ -399,24 +400,35 @@ export default function ResumeEditorPage() {
           const canvasWidth = canvas.width;
           const canvasHeight = canvas.height;
           const ratio = canvasWidth / canvasHeight;
-          const imgHeight = pdfWidth / ratio;
-          let height = imgHeight;
-          let position = 0;
+          let imgHeight = pdfWidth / ratio;
+          let currentPosition = 0;
+          
+          if (imgHeight <= pdfHeight) {
+            pdf.addImage(imgData, 'PNG', 0, currentPosition, pdfWidth, imgHeight);
+          } else {
+            let remainingHeight = canvasHeight * (pdfWidth / canvasWidth); // total scaled height in PDF units
+            let yOffsetForCanvas = 0; // y-offset for cropping from the source canvas
 
-          if (imgHeight > pdfHeight) { // Handle content larger than one page
-             height = pdfHeight;
-          }
-          
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, height);
-          let pageCount = 1;
-          let remainingHeight = imgHeight - height;
-          
-          while(remainingHeight > 0) {
-            position -= pdfHeight;
-            pdf.addPage();
-            pageCount++;
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight); // Add full image, jsPDF clips
-            remainingHeight -= pdfHeight;
+            while (remainingHeight > 0) {
+              const pageCanvas = document.createElement('canvas');
+              pageCanvas.width = canvas.width;
+              pageCanvas.height = (pdfHeight / (pdfWidth / canvas.width)); // height of one PDF page in source canvas pixels
+              
+              const pageCtx = pageCanvas.getContext('2d');
+              if (pageCtx) {
+                 pageCtx.drawImage(canvas, 0, yOffsetForCanvas, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
+                 const pageImgData = pageCanvas.toDataURL('image/png');
+                 if (currentPosition > 0) {
+                   pdf.addPage();
+                 }
+                 pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                 yOffsetForCanvas += pageCanvas.height;
+                 remainingHeight -= pdfHeight;
+                 currentPosition += pdfHeight;
+              } else {
+                break; 
+              }
+            }
           }
           pdf.save(`${activeResume.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
           toast({ title: "PDF Downloaded", description: "Your resume has been downloaded as a PDF." });
@@ -431,23 +443,47 @@ export default function ResumeEditorPage() {
   };
 
 
-  if (!activeResume) {
+  if (!activeResume && resumeId !== 'new') { // If it's 'new', we expect activeResume to be set soon by useEffect
     return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">
           <FileText className="w-16 h-16 text-muted-foreground mb-4" />
-          <p className="text-xl text-muted-foreground font-semibold">Loading resume data or select a resume...</p>
-          <p className="text-sm text-muted-foreground">If you're creating a new resume, it will appear shortly.</p>
+          <p className="text-xl text-muted-foreground font-semibold">Loading resume data...</p>
           <Button onClick={() => router.push('/resumes')} className="mt-4">Go to Dashboard</Button>
         </div>
       </AppShell>
     );
   }
+  
+  // Render a loading state or minimal UI if activeResume is null AND resumeId is 'new'
+  // This prevents trying to access activeResume.versionName etc. too early
+  if (!activeResume && resumeId === 'new') {
+     return (
+      <AppShell>
+        <div className="flex flex-col items-center justify-center h-full">
+            <FilePlus className="w-16 h-16 text-muted-foreground mb-4 animate-pulse" />
+            <p className="text-xl text-muted-foreground font-semibold">Creating new resume...</p>
+        </div>
+      </AppShell>
+     );
+  }
+  
+  // After the 'new' resume is created and activeResume is set, this will render:
+  if (!activeResume) { // Should ideally not be reached if above conditions are met
+    return (
+      <AppShell>
+        <div className="flex flex-col items-center justify-center h-full">
+           <p className="text-xl text-muted-foreground font-semibold">Error: No active resume.</p>
+           <Button onClick={() => router.push('/resumes')} className="mt-4">Go to Dashboard</Button>
+        </div>
+      </AppShell>
+    );
+  }
+
 
   return (
     <AppShell>
       <div className="flex flex-col h-full">
-        {/* Header Bar */}
         <div className="flex items-center justify-between p-4 border-b bg-card sticky top-0 z-10">
           <Input 
             className="text-xl font-bold font-headline w-1/2 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0" 
@@ -457,14 +493,11 @@ export default function ResumeEditorPage() {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleSaveResume}><Save className="mr-2 h-4 w-4" /> Save</Button>
             <Button onClick={handleDownloadPDF}><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
-            {/* <Button variant="ghost" size="icon"><Share2 className="h-5 w-5" /></Button> */}
           </div>
         </div>
 
-        {/* Main Editor Area */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-0 overflow-hidden"> {/* md:grid-cols-[60%_40%] */}
-          {/* Form Section */}
-          <ScrollArea className="h-[calc(100vh-128px)] md:border-r"> {/* Adjust height based on header/footer */}
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-0 overflow-hidden">
+          <ScrollArea className="h-[calc(100vh-128px)] md:border-r">
             <div className="p-2 sm:p-4 space-y-6">
               <Tabs defaultValue="content" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-4">
@@ -478,14 +511,12 @@ export default function ResumeEditorPage() {
                   <ExperienceForm resume={activeResume} updateField={handleUpdateField} />
                   <EducationForm resume={activeResume} updateField={handleUpdateField} />
                   <SkillsForm resume={activeResume} updateField={handleUpdateField} />
-                  {/* Add ProjectsForm and CustomSectionsForm here */}
                 </TabsContent>
                 <TabsContent value="design">
                   <Card>
                     <CardHeader><CardTitle className="font-headline">Design & Layout</CardTitle></CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground">Template selection and customization options will be here.</p>
-                      {/* Basic Template Selection */}
                        <div>
                         <Label htmlFor="template-select">Template</Label>
                         <select id="template-select" value={activeResume.template} onChange={e => handleUpdateField('template', e.target.value)} className="w-full p-2 border rounded">
@@ -523,7 +554,6 @@ export default function ResumeEditorPage() {
             </div>
           </ScrollArea>
 
-          {/* Preview Section */}
           <ScrollArea className="h-[calc(100vh-128px)] bg-muted/30">
             <div className="p-4 md:p-8">
               <ResumePreview resumeData={activeResume} />
@@ -534,3 +564,4 @@ export default function ResumeEditorPage() {
     </AppShell>
   );
 }
+
