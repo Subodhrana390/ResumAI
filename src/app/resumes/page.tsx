@@ -4,6 +4,9 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import * as ReactDOM from 'react-dom/client';
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppShell } from '@/components/layout/app-shell';
@@ -19,15 +22,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ResumePreview } from '@/components/resume/resume-preview';
 import type { ResumeData } from '@/types/resume';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function ResumesDashboardPage() {
   const { resumes, isLoading, createResume, deleteResume, duplicateResume, loadResumes } = useResumeContext();
   const router = useRouter();
   const [previewingResume, setPreviewingResume] = useState<ResumeData | null>(null);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadResumes(); // Ensure resumes are loaded when component mounts or resumes list changes
@@ -58,6 +65,81 @@ export default function ResumesDashboardPage() {
 
   const handlePreviewResume = (resume: ResumeData) => {
     setPreviewingResume(resume);
+  };
+
+  const handleDownloadPDF = async (resumeToDownload: ResumeData) => {
+    if (isDownloading) return;
+    setIsDownloading(resumeToDownload.id);
+    toast({ title: "Preparing PDF...", description: "Please wait a moment." });
+
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '800px';
+    document.body.appendChild(container);
+
+    const root = ReactDOM.createRoot(container);
+    root.render(<ResumePreview resumeData={resumeToDownload} />);
+
+    setTimeout(() => {
+        const resumeContentElement = container.querySelector('#resume-preview-content') as HTMLElement;
+
+        if (resumeContentElement) {
+            const cardElement = resumeContentElement.closest('.bg-card') as HTMLElement;
+            if (cardElement) cardElement.style.boxShadow = 'none';
+
+            html2canvas(resumeContentElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                width: resumeContentElement.scrollWidth,
+                windowWidth: resumeContentElement.scrollWidth,
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'pt', 'a4');
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = canvasHeight / canvasWidth;
+
+                const imgWidthOnPdf = pdfWidth - 72;
+                const imgHeightOnPdf = imgWidthOnPdf * ratio;
+
+                let heightLeft = imgHeightOnPdf;
+                let position = 36;
+
+                pdf.addImage(imgData, 'PNG', 36, position, imgWidthOnPdf, imgHeightOnPdf);
+                heightLeft -= (pdfHeight - 72);
+
+                while (heightLeft > 0) {
+                    position = position - (pdfHeight - 72);
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 36, position, imgWidthOnPdf, imgHeightOnPdf);
+                    heightLeft -= (pdfHeight - 72);
+                }
+                
+                pdf.save(`${resumeToDownload.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
+                toast({ title: "PDF Downloaded", description: "Your resume has been downloaded." });
+
+            }).catch(err => {
+                console.error("Error generating PDF with html2canvas:", err);
+                toast({ title: "PDF Generation Failed", description: "Could not generate PDF.", variant: "destructive" });
+            }).finally(() => {
+                root.unmount();
+                document.body.removeChild(container);
+                setIsDownloading(null);
+            });
+        } else {
+            root.unmount();
+            document.body.removeChild(container);
+            setIsDownloading(null);
+            toast({ title: "Error", description: "Failed to prepare resume for PDF generation.", variant: "destructive" });
+        }
+    }, 200);
   };
 
 
@@ -138,8 +220,20 @@ export default function ResumesDashboardPage() {
                       <DropdownMenuItem onClick={() => handlePreviewResume(resume)}>
                         <Eye className="mr-2 h-4 w-4" /> Preview
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Download className="mr-2 h-4 w-4" /> Download PDF
+                      <DropdownMenuItem
+                        onClick={() => handleDownloadPDF(resume)}
+                        disabled={!!isDownloading}
+                      >
+                        {isDownloading === resume.id ? (
+                          <>
+                            <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-transparent border-t-current" />
+                            Downloading...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="mr-2 h-4 w-4" /> Download PDF
+                          </>
+                        )}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
