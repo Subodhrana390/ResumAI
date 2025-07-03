@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BotMessageSquare, FileText, Palette, CheckCircle } from "lucide-react";
@@ -107,8 +108,8 @@ export default function LandingPage() {
               </Card>
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="p-3 rounded-full bg-green-500/20 inline-block mb-3">
-                     <CheckCircle className="h-8 w-8 text-green-500" />
+                  <div className="p-3 rounded-full bg-accent/20 inline-block mb-3">
+                     <CheckCircle className="h-8 w-8 text-accent" />
                   </div>
                   <CardTitle className="font-headline">ATS Checker</CardTitle>
                   <CardDescription>Analyze your resume for ATS compatibility and get improvement tips.</CardDescription>
