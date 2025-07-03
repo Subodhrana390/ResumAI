@@ -890,101 +890,80 @@ export default function ResumeEditorPage() {
  const handleDownloadPDF = () => {
     const resumeContentElement = document.getElementById('resume-preview-content');
     if (resumeContentElement && activeResume) {
-        const html2canvasScale = 2; // Scale for html2canvas rendering
-        const targetPdfDpi = 96; // Target effective DPI on PDF
-        const marginPoints = 36; // 0.5 inch margin in points (1 inch = 72 points)
+        
+        // Find the parent Card element to manipulate its shadow
+        const cardElement = resumeContentElement.parentElement;
 
-        html2canvas(resumeContentElement, {
-            scale: html2canvasScale,
-            useCORS: true,
-            logging: false, // reduce console noise
-        }).then((sourceCanvas) => {
-            const pdf = new jsPDF('p', 'pt', 'a4'); // Use points as units
+        const originalStyles = {
+            width: resumeContentElement.style.width,
+            padding: resumeContentElement.style.padding,
+            boxShadow: cardElement ? cardElement.style.boxShadow : '',
+        };
+        
+        const fixedWidthForCapturePx = 800; // Standard document width in pixels
+        resumeContentElement.style.width = `${fixedWidthForCapturePx}px`;
+        // Let's remove the shadow on the parent card for a clean capture
+        if (cardElement) {
+            cardElement.style.boxShadow = 'none';
+        }
 
-            const browserContentWidthPx = resumeContentElement.offsetWidth;
-            
-            // Calculate target width on PDF based on browser width and target DPI
-            const targetContentWidthInches = browserContentWidthPx / targetPdfDpi;
-            let targetImageWidthOnPdfPoints = targetContentWidthInches * 72;
+        // Allow styles to apply before capture
+        setTimeout(() => {
+            html2canvas(resumeContentElement, {
+                scale: 2, // Higher scale for better quality
+                useCORS: true,
+                logging: false,
+                width: fixedWidthForCapturePx, // Explicitly set capture width
+                windowWidth: fixedWidthForCapturePx,
+            }).then((canvas) => {
+                // Restore original styles immediately after capture
+                resumeContentElement.style.width = originalStyles.width;
+                if(cardElement) cardElement.style.boxShadow = originalStyles.boxShadow || '';
 
-            const pagePointsWidth = pdf.internal.pageSize.getWidth();
-            const pagePointsHeight = pdf.internal.pageSize.getHeight();
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'pt', 'a4');
 
-            const effectivePagePointsWidth = pagePointsWidth - 2 * marginPoints;
-            const effectivePagePointsHeight = pagePointsHeight - 2 * marginPoints;
+                const pagePointsWidth = pdf.internal.pageSize.getWidth();
+                const pagePointsHeight = pdf.internal.pageSize.getHeight();
+                const margin = 36; // 0.5 inch
 
-            // Adjust targetImageWidth if it's wider than effective page width
-            if (targetImageWidthOnPdfPoints > effectivePagePointsWidth) {
-                targetImageWidthOnPdfPoints = effectivePagePointsWidth;
-            }
-
-            const sourceCanvasWidth = sourceCanvas.width;
-            const sourceCanvasHeight = sourceCanvas.height;
-            const imageAspectRatio = sourceCanvasWidth / sourceCanvasHeight;
-            
-            const totalImageHeightOnPdfPoints = targetImageWidthOnPdfPoints / imageAspectRatio;
-            
-            const xOffset = marginPoints;
-            const yOffset = marginPoints;
-
-            if (totalImageHeightOnPdfPoints <= effectivePagePointsHeight) {
-                // Single page scenario
-                const imgData = sourceCanvas.toDataURL('image/png');
-                pdf.addImage(imgData, 'PNG', xOffset, yOffset, targetImageWidthOnPdfPoints, totalImageHeightOnPdfPoints);
-            } else {
-                // Multi-page scenario
-                let currentYCanvasOnSource = 0;
-                let remainingSourceCanvasHeight = sourceCanvasHeight;
+                // Content area
+                const contentWidth = pagePointsWidth - margin * 2;
                 
-                const pageCanvas = document.createElement('canvas');
-                pageCanvas.width = sourceCanvasWidth;
-                // Height of the canvas chunk that corresponds to one PDF page's content area height
-                const canvasChunkHeightForOnePage = sourceCanvasWidth * effectivePagePointsHeight / targetImageWidthOnPdfPoints;
-                pageCanvas.height = canvasChunkHeightForOnePage; 
-                const pageCtx = pageCanvas.getContext('2d');
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const canvasAspectRatio = canvasHeight / canvasWidth;
 
-                while (remainingSourceCanvasHeight > 0) {
-                    const currentChunkActualCanvasHeight = Math.min(canvasChunkHeightForOnePage, remainingSourceCanvasHeight);
-                    
-                    if (pageCanvas.height !== currentChunkActualCanvasHeight) {
-                         pageCanvas.height = currentChunkActualCanvasHeight; // Adjust if last chunk is smaller
-                    }
+                const imgHeightOnPdf = contentWidth * canvasAspectRatio;
+                const contentHeightOnPdfPage = pagePointsHeight - margin * 2;
 
-                    if (pageCtx) {
-                        pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
-                        pageCtx.drawImage(
-                            sourceCanvas,
-                            0, currentYCanvasOnSource, // Source x, y
-                            sourceCanvasWidth, currentChunkActualCanvasHeight, // Source width, height
-                            0, 0, // Destination x, y on pageCanvas
-                            sourceCanvasWidth, currentChunkActualCanvasHeight  // Destination width, height on pageCanvas
-                        );
-                        const pageSegmentImgData = pageCanvas.toDataURL('image/png');
-                        
-                        // Calculate the height this segment will occupy on the PDF page
-                        const segmentHeightOnPdf = currentChunkActualCanvasHeight * targetImageWidthOnPdfPoints / sourceCanvasWidth;
-                        
-                        pdf.addImage(pageSegmentImgData, 'PNG', xOffset, yOffset, targetImageWidthOnPdfPoints, segmentHeightOnPdf);
+                let heightLeft = imgHeightOnPdf;
+                let position = margin; 
 
-                        currentYCanvasOnSource += currentChunkActualCanvasHeight;
-                        remainingSourceCanvasHeight -= currentChunkActualCanvasHeight;
+                // Add the first page (or the only page)
+                pdf.addImage(imgData, 'PNG', margin, position, contentWidth, imgHeightOnPdf);
+                heightLeft -= contentHeightOnPdfPage;
 
-                        if (remainingSourceCanvasHeight > 0) {
-                            pdf.addPage();
-                        }
-                    } else {
-                        console.error("Failed to get 2D context for page canvas segment.");
-                        toast({ title: "PDF Error", description: "Could not process page segment for PDF.", variant: "destructive" });
-                        return; // Exit if context fails
-                    }
+                // Add subsequent pages if needed
+                while (heightLeft > 0) {
+                    position = position - pagePointsHeight; // Move the image "up" on the next page, accounting for full page height.
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', margin, position, contentWidth, imgHeightOnPdf);
+                    heightLeft -= pagePointsHeight;
                 }
-            }
-            pdf.save(`${activeResume.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
-            toast({ title: "PDF Downloaded", description: "Your resume has been downloaded." });
-        }).catch(err => {
-            console.error("Error generating PDF with html2canvas:", err);
-            toast({ title: "PDF Generation Failed", description: "Could not generate PDF.", variant: "destructive" });
-        });
+                
+                pdf.save(`${activeResume.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
+                toast({ title: "PDF Downloaded", description: "Your resume has been downloaded." });
+
+            }).catch(err => {
+                // Restore styles on error as well
+                resumeContentElement.style.width = originalStyles.width;
+                if(cardElement) cardElement.style.boxShadow = originalStyles.boxShadow || '';
+
+                console.error("Error generating PDF with html2canvas:", err);
+                toast({ title: "PDF Generation Failed", description: "Could not generate PDF.", variant: "destructive" });
+            });
+        }, 100); // Increased timeout slightly for safety
     } else {
        toast({ title: "Error", description: "Resume content not found for PDF generation.", variant: "destructive" });
     }
@@ -1135,5 +1114,3 @@ export default function ResumeEditorPage() {
     </AppShell>
   );
 }
-
-    
