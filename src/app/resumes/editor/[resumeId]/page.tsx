@@ -29,7 +29,7 @@ import { ResumePreview } from '@/components/resume/resume-preview';
 // Sub-components for different resume sections
 const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => (
   <Card>
-    <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Info className="w-5 h-5 text-primary" />Contact Information</CardTitle></CardHeader>
+    <CardHeader><CardTitle className="flex items-center gap-2"><Info className="w-5 h-5 text-primary" />Contact Information</CardTitle></CardHeader>
     <CardContent className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div><Label htmlFor="name">Full Name</Label><Input id="name" value={resume.contact.name} onChange={e => updateField('contact.name', e.target.value)} placeholder="John Doe" /></div>
@@ -52,7 +52,7 @@ const SummaryForm = ({ resume, updateField, generateAISummary, isLoadingAISummar
   <Card>
     <CardHeader>
       <div className="flex justify-between items-center">
-        <CardTitle className="font-headline flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Professional Summary</CardTitle>
+        <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary" />Professional Summary</CardTitle>
         <Button variant="outline" size="sm" onClick={generateAISummary} disabled={isLoadingAISummary}>
           <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAISummary ? 'Generating...' : 'Generate with AI'}
         </Button>
@@ -120,7 +120,7 @@ const ExperienceForm = ({ resume, updateField, toast }: { resume: any, updateFie
 
   return (
   <Card>
-    <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" />Work Experience</CardTitle></CardHeader>
+    <CardHeader><CardTitle className="flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" />Work Experience</CardTitle></CardHeader>
     <CardContent className="space-y-4">
       {resume.experience.map((exp: ResumeExperience, index: number) => (
         <Card key={exp.id} className="p-4 space-y-3">
@@ -173,7 +173,7 @@ const EducationForm = ({ resume, updateField }: { resume: any, updateField: (fie
 
   return (
   <Card>
-    <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" />Education</CardTitle></CardHeader>
+    <CardHeader><CardTitle className="flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" />Education</CardTitle></CardHeader>
     <CardContent className="space-y-4">
       {resume.education.map((edu: ResumeEducation, index: number) => (
         <Card key={edu.id} className="p-4 space-y-3">
@@ -265,7 +265,7 @@ const SkillsForm = ({ resume, updateField, toast, jobDescriptionForAISkills }: {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-            <CardTitle className="font-headline flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary"/>Skills</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary"/>Skills</CardTitle>
             <Button variant="outline" size="sm" onClick={handleGenerateAISkills} disabled={isLoadingAISkills}>
                 <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAISkills ? 'Suggesting...' : 'AI Suggest Skills'}
             </Button>
@@ -309,7 +309,7 @@ const LanguagesForm = ({ resume, updateField }: { resume: any, updateField: (fie
 
   return (
     <Card>
-      <CardHeader><CardTitle className="font-headline flex items-center gap-2"><LanguagesIcon className="w-5 h-5 text-primary"/>Languages</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="flex items-center gap-2"><LanguagesIcon className="w-5 h-5 text-primary"/>Languages</CardTitle></CardHeader>
       <CardContent className="space-y-4">
         {(resume.languages || []).map((lang: ResumeLanguage, index: number) => (
           <Card key={lang.id} className="p-4 space-y-3">
@@ -404,7 +404,7 @@ const CustomSectionsForm = ({ resume, updateField }: { resume: any, updateField:
 
   return (
     <Card>
-      <CardHeader><CardTitle className="font-headline flex items-center gap-2"><ListPlus className="w-5 h-5 text-primary"/>Custom Sections</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="flex items-center gap-2"><ListPlus className="w-5 h-5 text-primary"/>Custom Sections</CardTitle></CardHeader>
       <CardContent className="space-y-6">
         {(resume.customSections || []).map((section: ResumeCustomSection, sectionIndex: number) => (
           <Card key={section.id} className="p-4 space-y-4 bg-muted/30">
@@ -746,7 +746,7 @@ export default function ResumeEditorPage() {
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between p-4 border-b bg-card sticky top-0 z-10">
           <Input 
-            className="text-xl font-bold font-headline w-1/2 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0" 
+            className="text-xl font-bold font-headline w-full sm:w-1/2 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0" 
             value={activeResume.versionName} 
             onChange={(e) => handleUpdateField('versionName', e.target.value)}
           />
@@ -777,7 +777,7 @@ export default function ResumeEditorPage() {
                 <TabsContent value="design">
                   <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">Choose a Template</CardTitle>
+                        <CardTitle>Choose a Template</CardTitle>
                         <CardDescription>Select a style that best fits your profile.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -810,7 +810,7 @@ export default function ResumeEditorPage() {
                 </TabsContent>
                 <TabsContent value="ats">
                   <Card>
-                    <CardHeader><CardTitle className="font-headline">ATS Compatibility Check</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>ATS Compatibility Check</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                       <div>
                         <Label htmlFor="job-description">Job Description (Optional)</Label>

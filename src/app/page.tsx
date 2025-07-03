@@ -13,17 +13,17 @@ export default function LandingPage() {
           <BotMessageSquare className="h-8 w-8 text-primary" />
           <span className="ml-2 text-2xl font-bold font-headline">ResumAI</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
+        <nav className="ml-auto flex items-center gap-4 sm:gap-6">
           <Link
             href="#features"
-            className="text-sm font-medium hover:underline underline-offset-4"
+            className="text-sm font-medium hover:underline underline-offset-4 hidden sm:inline-block"
             prefetch={false}
           >
             Features
           </Link>
           <Link
             href="#pricing"
-            className="text-sm font-medium hover:underline underline-offset-4"
+            className="text-sm font-medium hover:underline underline-offset-4 hidden sm:inline-block"
             prefetch={false}
           >
             Pricing

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -119,7 +120,7 @@ body {
     @apply text-center mb-6 pb-2 border-b-2 border-gray-400 dark:border-gray-600;
   }
   .template-classic .resume-header h1 {
-    @apply text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 font-serif; /* Serif for name */
+    @apply text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 font-serif; /* Serif for name */
   }
   .template-classic .resume-header p {
     @apply text-sm text-gray-600 dark:text-gray-300;
@@ -128,7 +129,7 @@ body {
     @apply mb-5;
   }
   .template-classic .resume-section-title {
-    @apply text-xl font-semibold border-b-2 border-gray-300 dark:border-gray-700 pb-1 mb-3 text-gray-700 dark:text-gray-200 font-serif; /* Serif for section titles */
+    @apply text-lg sm:text-xl font-semibold border-b-2 border-gray-300 dark:border-gray-700 pb-1 mb-3 text-gray-700 dark:text-gray-200 font-serif; /* Serif for section titles */
   }
    .template-classic .resume-item {
     @apply mb-3;
@@ -154,10 +155,10 @@ body {
     @apply font-sans; /* Ensure sans-serif base for modern */
   }
   .template-modern .resume-header {
-    @apply text-left border-b-2 border-primary pb-4 mb-8; /* More bottom margin */
+    @apply text-left border-b-2 border-primary pb-2 mb-4 sm:pb-4 sm:mb-8; /* More bottom margin */
   }
   .template-modern .resume-header h1 {
-    @apply text-4xl font-bold text-primary mb-0.5; /* Primary color for name */
+    @apply text-3xl sm:text-4xl font-bold text-primary mb-0.5; /* Primary color for name */
   }
   .template-modern .resume-header p {
     @apply text-sm text-muted-foreground;
@@ -239,7 +240,7 @@ body {
   }
 
   .template-two-column-classic .resume-main-name {
-    @apply text-center text-5xl font-bold text-gray-800 dark:text-gray-100 mb-8 tracking-wide; /* Large name */
+    @apply text-center text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-gray-100 mb-4 md:mb-8 tracking-wide; /* Large name */
   }
 
   .template-two-column-classic .resume-layout-grid {
@@ -283,7 +284,7 @@ body {
   }
 
   .template-two-column-classic .right-column-section-title {
-    @apply text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 pb-1.5 border-b-2 border-gray-500 dark:border-gray-400 tracking-normal;
+    @apply text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 pb-1.5 border-b-2 border-gray-500 dark:border-gray-400 tracking-normal;
   }
 
   .template-two-column-classic .resume-item { /* Common for experience, education */

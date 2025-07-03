@@ -207,7 +207,7 @@ export default function ResumesDashboardPage() {
             <Card key={resume.id} className="flex flex-col hover:shadow-xl transition-shadow duration-300 ease-in-out">
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <CardTitle className="font-headline text-xl hover:text-primary transition-colors">
+                  <CardTitle className="hover:text-primary transition-colors">
                     <Link href={`/resumes/editor/${resume.id}`}>{resume.versionName}</Link>
                   </CardTitle>
                   <DropdownMenu>
@@ -277,7 +277,7 @@ export default function ResumesDashboardPage() {
       )}
 
       <Dialog open={!!previewingResume} onOpenChange={(isOpen) => !isOpen && setPreviewingResume(null)}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+        <DialogContent className="w-[95vw] sm:max-w-4xl h-[90vh] flex flex-col">
             <DialogHeader>
                 <DialogTitle>{previewingResume?.versionName}</DialogTitle>
             </DialogHeader>
