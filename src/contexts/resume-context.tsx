@@ -5,19 +5,20 @@ import { defaultResumeData } from '@/types/resume';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from './auth-context';
-
-const BASE_LOCAL_STORAGE_KEY = 'resumai_resumes';
+import { db } from '@/lib/firebase';
+import { collection, doc, getDocs, setDoc, deleteDoc, query } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 interface ResumeContextType {
   resumes: ResumeData[];
   activeResume: ResumeData | null;
   isLoading: boolean;
-  loadResumes: () => void;
+  loadResumes: () => Promise<void>;
   saveActiveResume: () => Promise<void>;
   createResume: () => Promise<ResumeData>;
   setActiveResumeById: (id: string | null) => void;
   deleteResume: (id:string) => Promise<void>;
-  updateActiveResume: (updater: (prev: ResumeData) => ResumeData) => void;
+  updateActiveResume: (updater: (prev: ResumeData | null) => ResumeData) => void;
   duplicateResume: (id: string) => Promise<ResumeData | null>;
 }
 
@@ -28,15 +29,10 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [activeResume, setActiveResume] = useState<ResumeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const getStorageKey = useCallback(() => {
-    if (!user) return null;
-    return `${BASE_LOCAL_STORAGE_KEY}_${user.uid}`;
-  }, [user]);
-
-  const loadResumes = useCallback(() => {
-    const storageKey = getStorageKey();
-    if (!storageKey) {
+  const loadResumes = useCallback(async () => {
+    if (!user || !db) {
         setResumes([]);
         setIsLoading(false);
         return;
@@ -44,65 +40,55 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     
     setIsLoading(true);
     try {
-      const storedResumes = localStorage.getItem(storageKey);
-      if (storedResumes) {
-        const parsedResumes = JSON.parse(storedResumes) as ResumeData[];
-        setResumes(parsedResumes);
-      } else {
-        setResumes([]);
-      }
+      const resumesCol = collection(db, 'users', user.uid, 'resumes');
+      const q = query(resumesCol);
+      const snapshot = await getDocs(q);
+      const userResumes = snapshot.docs.map(doc => doc.data() as ResumeData);
+      setResumes(userResumes);
     } catch (error) {
-      console.error("Failed to load resumes from localStorage:", error);
+      console.error("Failed to load resumes from Firestore:", error);
+      toast({ title: "Error", description: "Could not load your resumes from the database.", variant: "destructive"});
       setResumes([]);
     } finally {
       setIsLoading(false);
     }
-  }, [getStorageKey]);
+  }, [user, toast]);
   
   useEffect(() => {
       if (!isAuthLoading) {
         loadResumes();
-        setActiveResume(null);
+        setActiveResume(null); // Clear active resume on user change
       }
   }, [user, isAuthLoading, loadResumes]);
 
-
-  const saveResumesToStorage = useCallback((updatedResumes: ResumeData[]) => {
-    const storageKey = getStorageKey();
-    if (!storageKey) return;
-
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(updatedResumes));
-    } catch (error) {
-      console.error("Failed to save resumes to localStorage:", error);
-    }
-  }, [getStorageKey]);
-
   const createResume = useCallback(async (): Promise<ResumeData> => {
-    if (!user) {
-        throw new Error("User not authenticated. Cannot create resume.");
+    if (!user || !db) {
+        toast({ title: "Authentication Error", description: "You must be logged in to create a resume.", variant: "destructive"});
+        throw new Error("User not authenticated or Firebase not configured.");
     }
     const newId = uuidv4();
     const newResume: ResumeData = {
       ...defaultResumeData,
       id: newId,
-      versionName: `Resume ${resumes.length + 1}`,
+      versionName: `Untitled Resume ${resumes.length + 1}`,
       contact: { ...defaultResumeData.contact, name: user.displayName || '', email: user.email || '' },
-      experience: [],
-      education: [],
-      skills: [],
-      projects: [],
-      customSections: [],
-      languages: [],
       meta: { ...defaultResumeData.meta, lastModified: new Date().toISOString() },
-      settings: { ...defaultResumeData.settings },
     };
-    const updatedResumes = [...resumes, newResume];
-    setResumes(updatedResumes);
-    setActiveResume(newResume);
-    saveResumesToStorage(updatedResumes);
-    return newResume;
-  }, [resumes, saveResumesToStorage, user]);
+    
+    try {
+        const resumeRef = doc(db, 'users', user.uid, 'resumes', newId);
+        await setDoc(resumeRef, newResume);
+        const updatedResumes = [...resumes, newResume];
+        setResumes(updatedResumes);
+        setActiveResume(newResume);
+        toast({ title: "Resume Created!", description: "Your new resume has been saved." });
+        return newResume;
+    } catch (error) {
+        console.error("Error creating resume in Firestore:", error);
+        toast({ title: "Error", description: "Could not create new resume.", variant: "destructive"});
+        throw error;
+    }
+  }, [resumes, user, toast]);
 
   const setActiveResumeById = useCallback((id: string | null) => {
     if (id === null) {
@@ -113,36 +99,67 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     setActiveResume(resumeToActivate || null);
   }, [resumes]);
 
-  const updateActiveResume = useCallback((updater: (prev: ResumeData) => ResumeData) => {
+  const updateActiveResume = useCallback((updater: (prev: ResumeData | null) => ResumeData) => {
     setActiveResume(prev => {
-      if (!prev) return null;
       const updated = updater(prev);
       return { ...updated, meta: { ...updated.meta, lastModified: new Date().toISOString() } };
     });
   }, []);
   
   const saveActiveResume = useCallback(async () => {
-    if (!activeResume) return;
-    const updatedResumes = resumes.map(r => r.id === activeResume.id ? { ...activeResume, meta: { ...activeResume.meta, lastModified: new Date().toISOString()}} : r);
-    if (!updatedResumes.find(r => r.id === activeResume.id)) {
-       updatedResumes.push({...activeResume, meta: { ...activeResume.meta, lastModified: new Date().toISOString()}});
+    if (!activeResume || !user || !db) {
+        if(!db) toast({ title: "Save Failed", description: "Database connection not available.", variant: "destructive"});
+        return;
     }
-    setResumes(updatedResumes);
-    saveResumesToStorage(updatedResumes);
-  }, [activeResume, resumes, saveResumesToStorage]);
+    
+    const resumeToSave = { ...activeResume, meta: { ...activeResume.meta, lastModified: new Date().toISOString()}};
+    try {
+        const resumeRef = doc(db, 'users', user.uid, 'resumes', resumeToSave.id);
+        await setDoc(resumeRef, resumeToSave, { merge: true });
+
+        const updatedResumes = resumes.map(r => r.id === resumeToSave.id ? resumeToSave : r);
+        if (!updatedResumes.find(r => r.id === resumeToSave.id)) {
+            updatedResumes.push(resumeToSave);
+        }
+        setResumes(updatedResumes);
+    } catch (error) {
+        console.error("Error saving resume to Firestore:", error);
+        toast({ title: "Save Error", description: "Your changes could not be saved to the database.", variant: "destructive"});
+    }
+  }, [activeResume, user, resumes, toast]);
 
   const deleteResume = useCallback(async (id: string) => {
-    const updatedResumes = resumes.filter(r => r.id !== id);
-    setResumes(updatedResumes);
-    saveResumesToStorage(updatedResumes);
-    if (activeResume?.id === id) {
-      setActiveResume(null);
+    if (!user || !db) {
+        toast({ title: "Error", description: "You must be logged in to delete resumes.", variant: "destructive"});
+        return;
     }
-  }, [resumes, activeResume, saveResumesToStorage]);
+    try {
+        const resumeRef = doc(db, 'users', user.uid, 'resumes', id);
+        await deleteDoc(resumeRef);
+        
+        const updatedResumes = resumes.filter(r => r.id !== id);
+        setResumes(updatedResumes);
+        
+        if (activeResume?.id === id) {
+          setActiveResume(null);
+        }
+        toast({ title: "Resume Deleted", description: "The resume has been successfully deleted."});
+    } catch(error) {
+        console.error("Error deleting resume from Firestore:", error);
+        toast({ title: "Delete Error", description: "The resume could not be deleted.", variant: "destructive"});
+    }
+  }, [resumes, activeResume, user, toast]);
 
   const duplicateResume = useCallback(async (id: string): Promise<ResumeData | null> => {
+    if (!user || !db) {
+      toast({ title: "Error", description: "You must be logged in to duplicate resumes.", variant: "destructive"});
+      return null;
+    }
     const resumeToDuplicate = resumes.find(r => r.id === id);
-    if (!resumeToDuplicate) return null;
+    if (!resumeToDuplicate) {
+        toast({ title: "Error", description: "Could not find the resume to duplicate.", variant: "destructive"});
+        return null;
+    }
 
     const newId = uuidv4();
     const duplicatedResume: ResumeData = {
@@ -152,12 +169,21 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
       meta: { ...resumeToDuplicate.meta, lastModified: new Date().toISOString() },
     };
     
-    const updatedResumes = [...resumes, duplicatedResume];
-    setResumes(updatedResumes);
-    setActiveResume(duplicatedResume);
-    saveResumesToStorage(updatedResumes);
-    return duplicatedResume;
-  }, [resumes, saveResumesToStorage]);
+    try {
+        const newResumeRef = doc(db, 'users', user.uid, 'resumes', newId);
+        await setDoc(newResumeRef, duplicatedResume);
+        
+        const updatedResumes = [...resumes, duplicatedResume];
+        setResumes(updatedResumes);
+        setActiveResume(duplicatedResume);
+        toast({ title: "Resume Duplicated!", description: "A copy of your resume has been created."});
+        return duplicatedResume;
+    } catch (error) {
+         console.error("Error duplicating resume in Firestore:", error);
+         toast({ title: "Duplicate Error", description: "The resume could not be duplicated.", variant: "destructive"});
+         return null;
+    }
+  }, [resumes, user, toast]);
 
 
   return (
@@ -181,7 +207,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
 export const useResumeContext = () => {
   const context = useContext(ResumeContext);
   if (context === undefined) {
-    throw new Error('useResumeContext must be used within a ResumeProvider');
+    throw new Error('useResume-context must be used within a ResumeProvider');
   }
   return context;
 };

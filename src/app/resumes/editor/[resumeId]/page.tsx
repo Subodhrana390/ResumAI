@@ -486,69 +486,53 @@ export default function ResumeEditorPage() {
   const [atsSuggestions, setAtsSuggestions] = useState<string[]>([]);
   
   const hasInitializedNewRef = useRef(false);
-  const initialResumeIdPropRef = useRef(resumeId);
 
- useEffect(() => {
+  useEffect(() => {
     let isMounted = true;
-
     const initializeNewResume = async () => {
-        if (!hasInitializedNewRef.current) {
-            hasInitializedNewRef.current = true; 
-            const newResume = await createResume();
-            if (isMounted && newResume?.id) {
-                router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
-            }
+      if (!hasInitializedNewRef.current) {
+        hasInitializedNewRef.current = true;
+        try {
+          const newResume = await createResume();
+          if (isMounted && newResume?.id) {
+            router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
+          }
+        } catch (error) {
+          console.error("Failed to initialize new resume:", error);
+          if (isMounted) router.push('/resumes');
         }
+      }
     };
 
     if (resumeId === 'new') {
-        if (!activeResume || activeResume.id === defaultResumeData.id || activeResume.id === '' || activeResume.id !== initialResumeIdPropRef.current ) {
-             initializeNewResume();
-        }
+      initializeNewResume();
     } else if (resumeId) {
-        if (!activeResume || activeResume.id !== resumeId) {
-            setActiveResumeById(resumeId);
-        }
-         if (initialResumeIdPropRef.current === 'new' && activeResume?.id === resumeId) {
-            hasInitializedNewRef.current = true; 
-        } else if (initialResumeIdPropRef.current !== 'new' && resumeId !== initialResumeIdPropRef.current) {
-             hasInitializedNewRef.current = false;
-        }
+      if (!activeResume || activeResume.id !== resumeId) {
+        setActiveResumeById(resumeId);
+      }
     }
-    
-    if (initialResumeIdPropRef.current !== resumeId) {
-        initialResumeIdPropRef.current = resumeId;
-         if(resumeId !== 'new') { 
-            hasInitializedNewRef.current = false;
-        }
-    }
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [resumeId, createResume, setActiveResumeById, router, activeResume?.id ]);
+    return () => { isMounted = false; };
+  }, [resumeId, createResume, router, activeResume, setActiveResumeById]);
 
 
   const handleUpdateField = useCallback((fieldPath: string, value: any) => {
     updateActiveResume(prev => {
-      if (!prev) return defaultResumeData; 
+      const newResume = prev ? { ...prev } : { ...defaultResumeData };
       const pathParts = fieldPath.split('.');
-      let current = { ...prev }; 
-      let ref: any = current;
-
+      let current: any = newResume;
       for (let i = 0; i < pathParts.length - 1; i++) {
-        ref[pathParts[i]] = { ...(ref[pathParts[i]] || {}) };
-        ref = ref[pathParts[i]];
+        current[pathParts[i]] = { ...(current[pathParts[i]] || {}) };
+        current = current[pathParts[i]];
       }
-      ref[pathParts[pathParts.length - 1]] = value;
-      return current;
+      current[pathParts[pathParts.length - 1]] = value;
+      return newResume;
     });
   }, [updateActiveResume]);
   
   const handleSaveResume = async () => {
     if (!activeResume) return;
     await saveActiveResume();
-    toast({ title: "Resume Saved!", description: `${activeResume.versionName} has been saved.` });
+    toast({ title: "Resume Saved!", description: `Changes to ${activeResume.versionName} have been saved.` });
   };
 
   const handleGenerateAISummary = async () => {
@@ -728,7 +712,7 @@ export default function ResumeEditorPage() {
     );
   }
   
-  if (!activeResume && resumeId === 'new' && !hasInitializedNewRef.current) {
+  if (!activeResume && resumeId === 'new') {
      return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">

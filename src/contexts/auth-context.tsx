@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, type User as FirebaseUser } from 'firebase/auth';
 import { auth, firebaseConfigured } from '@/lib/firebase';
 import { Loader } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -21,6 +22,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
 
   useEffect(() => {
     // If Firebase is not configured, don't try to listen to auth state
@@ -44,7 +46,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async () => {
     if (!auth) {
-        alert("Login is disabled because Firebase is not configured. Please add your API keys to the .env file.");
+        toast({
+            title: "Login Unavailable",
+            description: "Firebase is not configured. Please add API keys to the .env file.",
+            variant: "destructive"
+        });
         console.error("Firebase not configured, login unavailable.");
         return;
     }
@@ -54,7 +60,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // onAuthStateChanged will handle the user state and the effect below will redirect
     } catch (error) {
       console.error("Firebase login failed:", error);
-      alert("Firebase login failed. Check the console for details and ensure your API key and auth domain are correct.");
+      toast({
+          title: "Login Failed",
+          description: "Could not sign in with Google. Please check console for details.",
+          variant: "destructive"
+      });
     }
   };
 
