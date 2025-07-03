@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
   
     if (!razorpayKey) {
-      toast({ title: "Configuration Error", description: "Payment gateway is not configured.", variant: "destructive" });
+      toast({ title: "Configuration Error", description: "Payment gateway is not configured. Please add `NEXT_PUBLIC_RAZORPAY_KEY_ID` to your .env file.", variant: "destructive" });
       console.error("Razorpay Key ID is not set in .env file.");
       return;
     }
@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       currency: "INR",
       name: "ResumAI Pro",
       description: "Monthly Pro Subscription",
-      image: "https://placehold.co/128x128/a7d1e8/2d3e50?text=R",
+      image: "https://placehold.co/128x128/a7d1e8/2d3e50?text=R", // A placeholder logo
       handler: async function (response: any) {
         // In a real app, you would send `response.razorpay_payment_id` to your backend for verification.
         // For this demo, we will assume payment is successful and upgrade the user.
@@ -185,7 +185,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         userId: user.uid,
       },
       theme: {
-        color: "#203541",
+        color: "#A7D1E8", // Matches primary theme color
       },
     };
   
@@ -203,7 +203,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const cancelSubscription = async () => {
     if (!user || !db || user.subscription.plan !== 'pro') return;
 
-    if (!window.confirm("Are you sure you want to cancel your Pro subscription? You will lose access to Pro features at the end of your current billing period.")) {
+    if (!window.confirm("Are you sure you want to cancel your Pro subscription? You will still have access to Pro features until the end of your current billing cycle.")) {
         return;
     }
 
@@ -224,7 +224,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
         setUser(updatedProfile);
 
-        toast({ title: "Subscription Canceled", description: "Your Pro plan has been canceled." });
+        toast({ title: "Subscription Canceled", description: "Your Pro plan has been canceled. Your access will continue until the end of the billing period." });
     } catch (error) {
         console.error("Failed to cancel subscription:", error);
         toast({ title: "Error", description: "Could not cancel your subscription. Please try again.", variant: "destructive" });
