@@ -58,13 +58,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       // onAuthStateChanged will handle the user state and the effect below will redirect
-    } catch (error) {
-      console.error("Firebase login failed:", error);
-      toast({
-          title: "Login Failed",
-          description: "Could not sign in with Google. Please check console for details.",
-          variant: "destructive"
-      });
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        console.log('Sign-in popup closed by user.');
+        // No toast needed for this case, it's an intentional user action.
+      } else {
+        console.error("Firebase login failed:", error);
+        toast({
+            title: "Login Failed",
+            description: "Could not sign in with Google. Please check console for details.",
+            variant: "destructive"
+        });
+      }
     }
   };
 
