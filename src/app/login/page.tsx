@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BotMessageSquare, Loader, AlertCircle } from 'lucide-react';
+import { BotMessageSquare, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -17,16 +17,10 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function LoginPage() {
-  const { login, user, isLoading, isFirebaseConfigured } = useAuth();
+  const { login, isFirebaseConfigured } = useAuth();
 
-  // The redirect logic and global loading screen are now handled in AuthProvider
-  if (isLoading || (user && isFirebaseConfigured)) {
-      return (
-          <div className="flex items-center justify-center min-h-screen bg-background">
-              <Loader className="h-8 w-8 animate-spin text-primary" />
-          </div>
-      )
-  }
+  // The AuthProvider component now handles all loading states and redirects.
+  // This page's only responsibility is to show the login options.
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
