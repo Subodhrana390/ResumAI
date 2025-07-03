@@ -65,7 +65,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <Image
-                src="https://placehold.co/600x400.png?text=Resume+Builder+Interface"
+                src="https://placehold.co/600x400.png"
                 width="600"
                 height="400"
                 alt="ResumAI Interface"
