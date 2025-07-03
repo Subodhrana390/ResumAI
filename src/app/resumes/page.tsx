@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -18,10 +19,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ResumePreview } from '@/components/resume/resume-preview';
+import type { ResumeData } from '@/types/resume';
 
 export default function ResumesDashboardPage() {
   const { resumes, isLoading, createResume, deleteResume, duplicateResume, loadResumes } = useResumeContext();
   const router = useRouter();
+  const [previewingResume, setPreviewingResume] = useState<ResumeData | null>(null);
 
   useEffect(() => {
     loadResumes(); // Ensure resumes are loaded when component mounts or resumes list changes
@@ -48,6 +54,10 @@ export default function ResumesDashboardPage() {
     if (duplicated) {
       router.push(`/resumes/editor/${duplicated.id}`);
     }
+  };
+
+  const handlePreviewResume = (resume: ResumeData) => {
+    setPreviewingResume(resume);
   };
 
 
@@ -125,7 +135,7 @@ export default function ResumesDashboardPage() {
                       <DropdownMenuItem onClick={() => handleDuplicateResume(resume.id)}>
                         <Copy className="mr-2 h-4 w-4" /> Duplicate
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePreviewResume(resume)}>
                         <Eye className="mr-2 h-4 w-4" /> Preview
                       </DropdownMenuItem>
                       <DropdownMenuItem>
@@ -154,7 +164,7 @@ export default function ResumesDashboardPage() {
                 </Link>
               </CardContent>
               <CardFooter className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" size="sm" onClick={() => router.push(`/resumes/editor/${resume.id}?view=preview`)}>
+                <Button variant="outline" size="sm" onClick={() => handlePreviewResume(resume)}>
                   <Eye className="mr-1 h-4 w-4" /> Preview
                 </Button>
                 <Button size="sm" onClick={() => handleEditResume(resume.id)}>
@@ -165,6 +175,19 @@ export default function ResumesDashboardPage() {
           ))}
         </div>
       )}
+
+      <Dialog open={!!previewingResume} onOpenChange={(isOpen) => !isOpen && setPreviewingResume(null)}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>{previewingResume?.versionName}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-grow min-h-0">
+                <ScrollArea className="h-full">
+                    {previewingResume && <ResumePreview resumeData={previewingResume} />}
+                </ScrollArea>
+            </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
