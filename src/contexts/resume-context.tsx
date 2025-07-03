@@ -4,8 +4,9 @@ import type { ResumeData } from '@/types/resume';
 import { defaultResumeData } from '@/types/resume';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from './auth-context';
 
-const LOCAL_STORAGE_KEY = 'resumai_resumes';
+const BASE_LOCAL_STORAGE_KEY = 'resumai_resumes';
 
 interface ResumeContextType {
   resumes: ResumeData[];
@@ -23,14 +24,27 @@ interface ResumeContextType {
 const ResumeContext = createContext<ResumeContextType | undefined>(undefined);
 
 export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [activeResume, setActiveResume] = useState<ResumeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getStorageKey = useCallback(() => {
+    if (!user) return null;
+    return `${BASE_LOCAL_STORAGE_KEY}_${user.uid}`;
+  }, [user]);
+
   const loadResumes = useCallback(() => {
+    const storageKey = getStorageKey();
+    if (!storageKey) {
+        setResumes([]);
+        setIsLoading(false);
+        return;
+    }
+    
     setIsLoading(true);
     try {
-      const storedResumes = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const storedResumes = localStorage.getItem(storageKey);
       if (storedResumes) {
         const parsedResumes = JSON.parse(storedResumes) as ResumeData[];
         setResumes(parsedResumes);
@@ -43,32 +57,43 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
+  }, [getStorageKey]);
+  
   useEffect(() => {
-    loadResumes();
-  }, [loadResumes]);
+      if (!isAuthLoading) {
+        loadResumes();
+        setActiveResume(null);
+      }
+  }, [user, isAuthLoading, loadResumes]);
+
 
   const saveResumesToStorage = useCallback((updatedResumes: ResumeData[]) => {
+    const storageKey = getStorageKey();
+    if (!storageKey) return;
+
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedResumes));
+      localStorage.setItem(storageKey, JSON.stringify(updatedResumes));
     } catch (error) {
       console.error("Failed to save resumes to localStorage:", error);
     }
-  }, []);
+  }, [getStorageKey]);
 
   const createResume = useCallback(async (): Promise<ResumeData> => {
+    if (!user) {
+        throw new Error("User not authenticated. Cannot create resume.");
+    }
     const newId = uuidv4();
     const newResume: ResumeData = {
       ...defaultResumeData,
       id: newId,
       versionName: `Resume ${resumes.length + 1}`,
-      contact: { ...defaultResumeData.contact },
+      contact: { ...defaultResumeData.contact, name: user.displayName || '', email: user.email || '' },
       experience: [],
       education: [],
       skills: [],
       projects: [],
       customSections: [],
+      languages: [],
       meta: { ...defaultResumeData.meta, lastModified: new Date().toISOString() },
       settings: { ...defaultResumeData.settings },
     };
@@ -77,7 +102,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     setActiveResume(newResume);
     saveResumesToStorage(updatedResumes);
     return newResume;
-  }, [resumes, saveResumesToStorage]);
+  }, [resumes, saveResumesToStorage, user]);
 
   const setActiveResumeById = useCallback((id: string | null) => {
     if (id === null) {
@@ -129,7 +154,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     
     const updatedResumes = [...resumes, duplicatedResume];
     setResumes(updatedResumes);
-    setActiveResume(duplicatedResume); // Optionally set the new duplicate as active
+    setActiveResume(duplicatedResume);
     saveResumesToStorage(updatedResumes);
     return duplicatedResume;
   }, [resumes, saveResumesToStorage]);
@@ -139,7 +164,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     <ResumeContext.Provider value={{ 
       resumes, 
       activeResume, 
-      isLoading,
+      isLoading: isLoading || isAuthLoading,
       loadResumes, 
       saveActiveResume,
       createResume, 

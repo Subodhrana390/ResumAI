@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import {
   SidebarProvider,
@@ -17,7 +17,7 @@ import {
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Home, FilePlus, BotMessageSquare, Settings, LogOut, Menu, Loader } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Separator } from '../ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
@@ -33,15 +33,10 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, isLoading, logout } = useAuth();
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
-    }
-  }, [isLoading, user, router]);
-
+  // This check is important because AppShell is only for authenticated routes.
+  // The global AuthProvider handles redirects, but this provides a loading fallback.
   if (isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -86,11 +81,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
              <Separator className="my-2 group-data-[collapsible=icon]:hidden"/>
              <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center">
                 <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.avatarUrl || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user avatar" />
-                    <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                    <AvatarImage src={user.photoURL || "https://placehold.co/100x100.png"} alt={user.displayName || "User Avatar"} data-ai-hint="user avatar" />
+                    <AvatarFallback>{user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-sm font-medium">{user.displayName || 'User'}</p>
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
              </div>
@@ -124,11 +119,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                    <SidebarFooter className="p-4 border-t mt-auto">
                       <div className="flex items-center gap-3 mb-4">
                           <Avatar className="h-10 w-10">
-                              <AvatarImage src={user.avatarUrl || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user avatar" />
-                              <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                              <AvatarImage src={user.photoURL || "https://placehold.co/100x100.png"} alt={user.displayName || "User Avatar"} data-ai-hint="user avatar" />
+                              <AvatarFallback>{user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                           </Avatar>
                           <div>
-                              <p className="text-sm font-medium">{user.name}</p>
+                              <p className="text-sm font-medium">{user.displayName || 'User'}</p>
                               <p className="text-xs text-muted-foreground">{user.email}</p>
                           </div>
                       </div>
