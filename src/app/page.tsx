@@ -66,12 +66,11 @@ export default function LandingPage() {
                 </div>
               </div>
               <Image
-                src="https://placehold.co/600x400.png"
+                src="/images/resume-builder-interface.png"
                 width="600"
                 height="400"
                 alt="ResumAI Interface"
                 className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last lg:aspect-square shadow-xl"
-                data-ai-hint="resume builder interface"
               />
             </div>
           </div>
@@ -108,8 +107,8 @@ export default function LandingPage() {
               </Card>
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="p-3 rounded-full bg-accent/20 inline-block mb-3">
-                     <CheckCircle className="h-8 w-8 text-accent" />
+                  <div className="p-3 rounded-full bg-primary/20 inline-block mb-3">
+                     <CheckCircle className="h-8 w-8 text-primary" />
                   </div>
                   <CardTitle className="font-headline">ATS Checker</CardTitle>
                   <CardDescription>Analyze your resume for ATS compatibility and get improvement tips.</CardDescription>
