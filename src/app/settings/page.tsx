@@ -21,9 +21,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Crown } from "lucide-react";
+import { format } from "date-fns";
 
 export default function SettingsPage() {
-  const { user, upgradeToPro } = useAuth();
+  const { user, upgradeToPro, cancelSubscription } = useAuth();
   const { toast } = useToast();
 
   const handleDeleteAccount = () => {
@@ -36,17 +37,12 @@ export default function SettingsPage() {
     });
   };
 
-  const handleManageSubscription = () => {
-      // In a real app, this would link to a Stripe customer portal
-      toast({
-          title: "Subscription Management (Not Implemented)",
-          description: "This would typically redirect to a payment provider's portal.",
-      });
-  };
-
   if (!user) {
     return null; // Or a loading state, but AuthProvider handles this
   }
+  
+  const proPlanIsActive = user.subscription.plan === 'pro' && user.subscription.status === 'active';
+  const proPlanIsCanceled = user.subscription.plan === 'pro' && user.subscription.status === 'canceled';
 
   return (
     <AppShell>
@@ -89,21 +85,39 @@ export default function SettingsPage() {
                     <p className="font-medium">
                         You are on the <span className={user.subscription.plan === 'pro' ? "text-primary font-bold" : ""}>{user.subscription.plan.charAt(0).toUpperCase() + user.subscription.plan.slice(1)}</span> plan.
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                        {user.subscription.plan === 'free' ? "Upgrade to unlock all features." : "You have access to all Pro features."}
-                    </p>
+                    {user.subscription.plan === 'free' && (
+                        <p className="text-sm text-muted-foreground">Upgrade to unlock all features.</p>
+                    )}
+                    {proPlanIsActive && user.subscription.startDate && (
+                        <p className="text-sm text-muted-foreground">
+                            Pro plan is active since {format(new Date(user.subscription.startDate), 'PPP')}.
+                        </p>
+                    )}
+                    {proPlanIsCanceled && (
+                         <p className="text-sm text-destructive">
+                            Your Pro plan is canceled. Access remains until the end of your billing cycle.
+                         </p>
+                    )}
                 </div>
-                {user.subscription.plan === 'free' ? (
+                {user.subscription.plan === 'free' && (
                     <Button onClick={upgradeToPro}>
                         <Crown className="mr-2 h-4 w-4" /> Upgrade to Pro
                     </Button>
-                ) : (
-                    <Button onClick={handleManageSubscription} variant="outline">
-                        Manage Subscription
+                )}
+                {proPlanIsActive && (
+                    <Button onClick={cancelSubscription} variant="destructive">
+                        Cancel Subscription
                     </Button>
                 )}
              </div>
           </CardContent>
+           <CardFooter>
+            <p className="text-xs text-muted-foreground">
+                {user.subscription.plan === 'pro' 
+                    ? "Cancellations take effect at the end of your current billing cycle."
+                    : "Upgrade to unlock unlimited resumes, premium templates, and advanced AI features."}
+            </p>
+        </CardFooter>
         </Card>
 
         {/* Appearance Section */}

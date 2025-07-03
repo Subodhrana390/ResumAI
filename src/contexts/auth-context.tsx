@@ -19,6 +19,8 @@ export interface UserProfile {
   photoURL: string | null;
   subscription: {
     plan: SubscriptionPlan;
+    status?: 'active' | 'canceled';
+    startDate?: string;
     razorpay_payment_id?: string;
   };
 }
@@ -29,6 +31,7 @@ interface AuthContextType {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   upgradeToPro: () => Promise<void>;
+  cancelSubscription: () => Promise<void>;
   isFirebaseConfigured: boolean;
 }
 
@@ -150,19 +153,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // For this demo, we will assume payment is successful and upgrade the user.
         try {
           const userDocRef = doc(db, 'users', user.uid);
-          await setDoc(userDocRef, {
-            subscription: {
-              plan: 'pro',
-              razorpay_payment_id: response.razorpay_payment_id,
-            }
-          }, { merge: true });
+          const newSubscription = {
+            plan: 'pro' as SubscriptionPlan,
+            status: 'active' as const,
+            startDate: new Date().toISOString(),
+            razorpay_payment_id: response.razorpay_payment_id,
+          };
+
+          await setDoc(userDocRef, { subscription: newSubscription }, { merge: true });
   
           const updatedProfile: UserProfile = {
             ...user,
             subscription: {
               ...user.subscription,
-              plan: 'pro',
-              razorpay_payment_id: response.razorpay_payment_id,
+              ...newSubscription,
             }
           };
           setUser(updatedProfile);
@@ -195,6 +199,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
     rzp.open();
   };
+
+  const cancelSubscription = async () => {
+    if (!user || !db || user.subscription.plan !== 'pro') return;
+
+    if (!window.confirm("Are you sure you want to cancel your Pro subscription? You will lose access to Pro features at the end of your current billing period.")) {
+        return;
+    }
+
+    try {
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, {
+            subscription: {
+                status: 'canceled',
+            }
+        }, { merge: true });
+
+        const updatedProfile: UserProfile = {
+            ...user,
+            subscription: {
+                ...user.subscription,
+                status: 'canceled',
+            }
+        };
+        setUser(updatedProfile);
+
+        toast({ title: "Subscription Canceled", description: "Your Pro plan has been canceled." });
+    } catch (error) {
+        console.error("Failed to cancel subscription:", error);
+        toast({ title: "Error", description: "Could not cancel your subscription. Please try again.", variant: "destructive" });
+    }
+  };
   
    useEffect(() => {
     if (!isLoading) {
@@ -221,7 +256,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, upgradeToPro, isFirebaseConfigured: firebaseConfigured }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, upgradeToPro, cancelSubscription, isFirebaseConfigured: firebaseConfigured }}>
       {children}
     </AuthContext.Provider>
   );
