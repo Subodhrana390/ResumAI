@@ -27,9 +27,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ResumePreview } from '@/components/resume/resume-preview';
 import type { ResumeData } from '@/types/resume';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 
 export default function ResumesDashboardPage() {
+  const { user } = useAuth();
   const { resumes, isLoading, createResume, deleteResume, duplicateResume, loadResumes } = useResumeContext();
   const router = useRouter();
   const [previewingResume, setPreviewingResume] = useState<ResumeData | null>(null);
@@ -43,7 +45,9 @@ export default function ResumesDashboardPage() {
 
   const handleCreateNewResume = async () => {
     const newResume = await createResume();
-    router.push(`/resumes/editor/${newResume.id}`);
+    if (newResume) {
+        router.push(`/resumes/editor/${newResume.id}`);
+    }
   };
 
   const handleEditResume = (id: string) => {
@@ -171,11 +175,13 @@ export default function ResumesDashboardPage() {
     );
   }
 
+  const canCreateResume = user?.subscription.plan === 'pro' || resumes.length < 1;
+
   return (
     <AppShell>
       <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold font-headline tracking-tight">My Resumes</h1>
-        <Button onClick={handleCreateNewResume} size="lg">
+        <Button onClick={handleCreateNewResume} size="lg" disabled={!canCreateResume}>
           <FilePlus className="mr-2 h-5 w-5" /> Create New Resume
         </Button>
       </div>
@@ -214,7 +220,7 @@ export default function ResumesDashboardPage() {
                       <DropdownMenuItem onClick={() => handleEditResume(resume.id)}>
                         <Edit3 className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDuplicateResume(resume.id)}>
+                      <DropdownMenuItem onClick={() => handleDuplicateResume(resume.id)} disabled={!canCreateResume}>
                         <Copy className="mr-2 h-4 w-4" /> Duplicate
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handlePreviewResume(resume)}>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ResumeData } from '@/types/resume';
@@ -15,7 +16,7 @@ interface ResumeContextType {
   isLoading: boolean;
   loadResumes: () => Promise<void>;
   saveActiveResume: () => Promise<void>;
-  createResume: () => Promise<ResumeData>;
+  createResume: () => Promise<ResumeData | null>;
   setActiveResumeById: (id: string | null) => void;
   deleteResume: (id:string) => Promise<void>;
   updateActiveResume: (updater: (prev: ResumeData | null) => ResumeData) => void;
@@ -61,11 +62,22 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
       }
   }, [user, isAuthLoading, loadResumes]);
 
-  const createResume = useCallback(async (): Promise<ResumeData> => {
+  const createResume = useCallback(async (): Promise<ResumeData | null> => {
     if (!user || !db) {
         toast({ title: "Authentication Error", description: "You must be logged in to create a resume.", variant: "destructive"});
-        throw new Error("User not authenticated or Firebase not configured.");
+        return null;
     }
+
+    // Subscription check: Free plan limit is 1 resume
+    if (user.subscription.plan === 'free' && resumes.length >= 1) {
+        toast({
+            title: "Upgrade to Pro to Create More Resumes",
+            description: "The Free plan is limited to 1 resume. Please upgrade to create more.",
+            variant: "destructive"
+        });
+        return null;
+    }
+
     const newId = uuidv4();
     const newResume: ResumeData = {
       ...defaultResumeData,
@@ -86,7 +98,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
         console.error("Error creating resume in Firestore:", error);
         toast({ title: "Error", description: "Could not create new resume.", variant: "destructive"});
-        throw error;
+        return null;
     }
   }, [resumes, user, toast]);
 
@@ -155,6 +167,16 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
       toast({ title: "Error", description: "You must be logged in to duplicate resumes.", variant: "destructive"});
       return null;
     }
+
+    if (user.subscription.plan === 'free' && resumes.length >= 1) {
+        toast({
+            title: "Upgrade to Pro to Duplicate",
+            description: "The Free plan is limited to 1 resume. Please upgrade to create more.",
+            variant: "destructive"
+        });
+        return null;
+    }
+
     const resumeToDuplicate = resumes.find(r => r.id === id);
     if (!resumeToDuplicate) {
         toast({ title: "Error", description: "Could not find the resume to duplicate.", variant: "destructive"});

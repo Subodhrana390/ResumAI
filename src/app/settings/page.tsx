@@ -3,7 +3,7 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,9 +20,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Crown } from "lucide-react";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, upgradeToPro } = useAuth();
   const { toast } = useToast();
 
   const handleDeleteAccount = () => {
@@ -33,6 +34,14 @@ export default function SettingsPage() {
       description: "This feature is not yet implemented in this prototype.",
       variant: "default",
     });
+  };
+
+  const handleManageSubscription = () => {
+      // In a real app, this would link to a Stripe customer portal
+      toast({
+          title: "Subscription Management (Not Implemented)",
+          description: "This would typically redirect to a payment provider's portal.",
+      });
   };
 
   if (!user) {
@@ -65,6 +74,35 @@ export default function SettingsPage() {
                 <p className="text-muted-foreground">{user.email}</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Subscription Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Subscription</CardTitle>
+            <CardDescription>Manage your ResumAI plan.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+                <div>
+                    <p className="font-medium">
+                        You are on the <span className={user.subscription.plan === 'pro' ? "text-primary font-bold" : ""}>{user.subscription.plan.charAt(0).toUpperCase() + user.subscription.plan.slice(1)}</span> plan.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                        {user.subscription.plan === 'free' ? "Upgrade to unlock all features." : "You have access to all Pro features."}
+                    </p>
+                </div>
+                {user.subscription.plan === 'free' ? (
+                    <Button onClick={upgradeToPro}>
+                        <Crown className="mr-2 h-4 w-4" /> Upgrade to Pro
+                    </Button>
+                ) : (
+                    <Button onClick={handleManageSubscription} variant="outline">
+                        Manage Subscription
+                    </Button>
+                )}
+             </div>
           </CardContent>
         </Card>
 

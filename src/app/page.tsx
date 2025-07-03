@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BotMessageSquare, FileText, Palette, CheckCircle } from "lucide-react";
+import { BotMessageSquare, FileText, Palette, CheckCircle, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -118,30 +118,56 @@ export default function LandingPage() {
           </div>
         </section>
         <section id="pricing" className="w-full py-12 md:py-24 lg:py-32 border-t">
-          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
-            <div className="space-y-3">
+          <div className="container px-4 md:px-6">
+            <div className="space-y-4 text-center">
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">
                 Simple, Transparent Pricing
               </h2>
               <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Get started for free, or unlock powerful features with our Pro plan.
+                Choose the plan that's right for you. Get started for free.
               </p>
             </div>
-            <div className="mx-auto w-full max-w-sm space-y-2">
-              <Card>
+            <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
+              <Card className="flex flex-col">
                 <CardHeader>
-                  <CardTitle className="font-headline">Free Tier</CardTitle>
+                  <CardTitle className="font-headline">Free</CardTitle>
                   <CardDescription>Basic resume building tools to get you started.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="text-3xl font-bold">$0<span className="text-sm font-normal text-muted-foreground">/month</span></p>
-                  <ul className="list-disc list-inside text-left text-sm text-muted-foreground">
+                <CardContent className="flex-grow space-y-4">
+                  <p className="text-4xl font-bold">$0<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                  <ul className="list-disc list-inside text-left text-muted-foreground space-y-1">
                     <li>1 Resume</li>
                     <li>Limited Templates</li>
                     <li>Basic AI Suggestions</li>
+                    <li>Standard Support</li>
                   </ul>
+                </CardContent>
+                <CardContent>
                   <Link href="/resumes" passHref>
-                    <Button className="w-full mt-4">Sign Up for Free</Button>
+                    <Button className="w-full" variant="outline">Sign Up for Free</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+              <Card className="flex flex-col border-primary ring-2 ring-primary">
+                 <CardHeader>
+                  <div className="flex justify-between">
+                    <CardTitle className="font-headline text-primary">Pro</CardTitle>
+                    <div className="inline-block rounded-lg bg-primary/20 px-3 py-1 text-xs text-primary-foreground font-semibold">Most Popular</div>
+                  </div>
+                  <CardDescription>Unlock powerful features to supercharge your job hunt.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
+                  <p className="text-4xl font-bold">$10<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                    <li>Unlimited Resumes</li>
+                    <li>All Premium Templates</li>
+                    <li>Advanced AI Features</li>
+                    <li>Priority Support</li>
+                  </ul>
+                </CardContent>
+                 <CardContent>
+                  <Link href="/resumes" passHref>
+                    <Button className="w-full">Go Pro</Button>
                   </Link>
                 </CardContent>
               </Card>
