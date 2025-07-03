@@ -134,7 +134,7 @@ export default function LandingPage() {
                   <CardDescription>Basic resume building tools to get you started.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
-                  <p className="text-4xl font-bold">$0<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                  <p className="text-4xl font-bold">₹0<span className="text-sm font-normal text-muted-foreground">/month</span></p>
                   <ul className="list-disc list-inside text-left text-muted-foreground space-y-1">
                     <li>1 Resume</li>
                     <li>Limited Templates</li>
@@ -157,7 +157,7 @@ export default function LandingPage() {
                   <CardDescription>Unlock powerful features to supercharge your job hunt.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
-                  <p className="text-4xl font-bold">$10<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                  <p className="text-4xl font-bold">₹99<span className="text-sm font-normal text-muted-foreground">/month</span></p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-1">
                     <li>Unlimited Resumes</li>
                     <li>All Premium Templates</li>

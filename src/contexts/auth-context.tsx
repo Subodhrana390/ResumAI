@@ -19,6 +19,7 @@ export interface UserProfile {
   photoURL: string | null;
   subscription: {
     plan: SubscriptionPlan;
+    razorpay_payment_id?: string;
   };
 }
 
@@ -125,22 +126,74 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const upgradeToPro = async () => {
     if (!user || !db) {
-        toast({ title: "Error", description: "You must be logged in to upgrade.", variant: "destructive" });
-        return;
+      toast({ title: "Error", description: "You must be logged in to upgrade.", variant: "destructive" });
+      return;
     }
-    try {
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, { subscription: { plan: 'pro' } }, { merge: true });
-        
-        // Update local user state immediately for instant UI feedback
-        const updatedProfile: UserProfile = { ...user, subscription: { plan: 'pro' } };
-        setUser(updatedProfile);
-
-        toast({ title: "Upgrade Successful!", description: "Welcome to Pro! You now have access to all premium features." });
-    } catch (error) {
-        console.error("Upgrade failed:", error);
-        toast({ title: "Upgrade Failed", description: "Could not update your subscription. Please try again.", variant: "destructive" });
+  
+    const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  
+    if (!razorpayKey) {
+      toast({ title: "Configuration Error", description: "Payment gateway is not configured.", variant: "destructive" });
+      console.error("Razorpay Key ID is not set in .env file.");
+      return;
     }
+  
+    const options = {
+      key: razorpayKey,
+      amount: "9900", // Amount in paise (₹99.00)
+      currency: "INR",
+      name: "ResumAI Pro",
+      description: "Monthly Pro Subscription",
+      image: "https://placehold.co/128x128/a7d1e8/2d3e50?text=R",
+      handler: async function (response: any) {
+        // In a real app, you would send `response.razorpay_payment_id` to your backend for verification.
+        // For this demo, we will assume payment is successful and upgrade the user.
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          await setDoc(userDocRef, {
+            subscription: {
+              plan: 'pro',
+              razorpay_payment_id: response.razorpay_payment_id,
+            }
+          }, { merge: true });
+  
+          const updatedProfile: UserProfile = {
+            ...user,
+            subscription: {
+              ...user.subscription,
+              plan: 'pro',
+              razorpay_payment_id: response.razorpay_payment_id,
+            }
+          };
+          setUser(updatedProfile);
+  
+          toast({ title: "Upgrade Successful!", description: "Welcome to Pro! You now have access to all premium features." });
+        } catch (error) {
+          console.error("Upgrade failed after payment:", error);
+          toast({ title: "Upgrade Failed", description: "Payment was successful, but we couldn't update your subscription. Please contact support.", variant: "destructive" });
+        }
+      },
+      prefill: {
+        name: user.displayName || "",
+        email: user.email || "",
+      },
+      notes: {
+        userId: user.uid,
+      },
+      theme: {
+        color: "#203541",
+      },
+    };
+  
+    const rzp = new (window as any).Razorpay(options);
+    rzp.on('payment.failed', function (response: any) {
+      toast({
+        title: 'Payment Failed',
+        description: response.error.description || 'Something went wrong.',
+        variant: 'destructive',
+      });
+    });
+    rzp.open();
   };
   
    useEffect(() => {
