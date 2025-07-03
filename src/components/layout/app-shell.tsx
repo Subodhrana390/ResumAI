@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import {
   SidebarProvider,
@@ -16,11 +16,12 @@ import {
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { Home, FilePlus, Briefcase, BotMessageSquare, Settings, LogOut, Menu } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { Home, FilePlus, BotMessageSquare, Settings, LogOut, Menu, Loader } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Separator } from '../ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import { useAuth } from '@/contexts/auth-context';
 
 const navItems = [
   { href: '/resumes', label: 'My Resumes', icon: Home },
@@ -32,6 +33,22 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isLoading, logout } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const renderNavItems = (isMobile = false) => (
     <SidebarMenu>
@@ -69,15 +86,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
              <Separator className="my-2 group-data-[collapsible=icon]:hidden"/>
              <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center">
                 <Avatar className="h-9 w-9">
-                    <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="user avatar" />
-                    <AvatarFallback>U</AvatarFallback>
+                    <AvatarImage src={user.avatarUrl || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user avatar" />
+                    <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium">User Name</p>
-                    <p className="text-xs text-muted-foreground">user@example.com</p>
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
              </div>
-            <Button variant="ghost" className="w-full justify-start group-data-[collapsible=icon]:justify-center mt-2">
+            <Button variant="ghost" className="w-full justify-start group-data-[collapsible=icon]:justify-center mt-2" onClick={logout}>
               <LogOut className="h-5 w-5" />
               <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
             </Button>
@@ -107,15 +124,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                    <SidebarFooter className="p-4 border-t mt-auto">
                       <div className="flex items-center gap-3 mb-4">
                           <Avatar className="h-10 w-10">
-                              <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="user avatar" />
-                              <AvatarFallback>U</AvatarFallback>
+                              <AvatarImage src={user.avatarUrl || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user avatar" />
+                              <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                           </Avatar>
                           <div>
-                              <p className="text-sm font-medium">User Name</p>
-                              <p className="text-xs text-muted-foreground">user@example.com</p>
+                              <p className="text-sm font-medium">{user.name}</p>
+                              <p className="text-xs text-muted-foreground">{user.email}</p>
                           </div>
                       </div>
-                      <Button variant="ghost" className="w-full justify-start">
+                      <Button variant="ghost" className="w-full justify-start" onClick={logout}>
                         <LogOut className="h-5 w-5 mr-2" />
                         <span>Logout</span>
                       </Button>

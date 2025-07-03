@@ -29,7 +29,7 @@ export default function LandingPage() {
             Pricing
           </Link>
           <Link
-            href="/resumes"
+            href="/login"
             className="text-sm font-medium hover:underline underline-offset-4"
             prefetch={false}
           >
@@ -70,7 +70,7 @@ export default function LandingPage() {
                 width="600"
                 height="400"
                 alt="ResumAI Interface"
-                className="mx-auto aspect-[3/2] overflow-hidden rounded-xl object-cover sm:w-full lg:order-last shadow-xl"
+                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last shadow-xl"
               />
             </div>
           </div>

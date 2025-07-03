@@ -2,14 +2,14 @@
 
 import React from 'react';
 import { ResumeProvider } from './resume-context';
-// Import other providers here if needed, e.g., AuthProvider
+import { AuthProvider } from './auth-context';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <ResumeProvider>
-      {/* <AuthProvider> */}
+    <AuthProvider>
+      <ResumeProvider>
         {children}
-      {/* </AuthProvider> */}
-    </ResumeProvider>
+      </ResumeProvider>
+    </AuthProvider>
   );
 }
