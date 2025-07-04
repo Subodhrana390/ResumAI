@@ -27,11 +27,18 @@ export type ResumeImprovementSuggestionsInput = z.infer<
   typeof ResumeImprovementSuggestionsInputSchema
 >;
 
-const ResumeImprovementSuggestionsOutputSchema = z.object({
-  suggestions: z
-    .array(z.string())
-    .describe('A list of actionable suggestions to improve the resume content for ATS and human readability.'),
+const ResumeImprovementSuggestionItemSchema = z.object({
+  problem: z.string().describe('A brief description of the identified problem in the resume.'),
+  suggestion: z.string().describe('A specific, actionable suggestion to fix the problem.'),
+  category: z.enum(['Keyword Optimization', 'Formatting', 'Clarity & Impact', 'Completeness']).describe('The category of the issue.'),
 });
+
+const ResumeImprovementSuggestionsOutputSchema = z.object({
+  atsScore: z.number().min(0).max(100).int().describe('An estimated ATS compatibility score from 0 to 100, as an integer.'),
+  overallFeedback: z.string().describe('A brief, high-level summary of the resume\'s strengths and areas for improvement.'),
+  suggestions: z.array(ResumeImprovementSuggestionItemSchema).describe('A list of detailed problems and suggestions for improvement.'),
+});
+
 
 export type ResumeImprovementSuggestionsOutput = z.infer<
   typeof ResumeImprovementSuggestionsOutputSchema
@@ -62,20 +69,13 @@ Job Description for ATS keyword analysis and tailoring:
 {{{jobDescription}}}
 {{/if}}
 
-Provide a list of specific, actionable suggestions to improve the resume. Focus on:
-1.  ATS Compatibility:
-    *   Incorporating relevant keywords from the job description (if provided).
-    *   Using standard resume sections and clear, parsable formatting.
-    *   Advising on the use of action verbs.
-    *   Identifying elements that might be problematic for ATS (e.g., over-reliance on tables, graphics if implied by content structure).
-2.  Impact and Clarity:
-    *   Enhancing the impact of bullet points and summaries (e.g., quantifying achievements).
-    *   Improving conciseness and readability for human reviewers.
-    *   Correcting any grammatical errors or awkward phrasing.
-3.  Completeness:
-    *   Suggesting any missing information that might be crucial (especially if a job description is provided).
-
-Suggestions (as a numbered list of actionable items):
+Based on your analysis, provide a response in the required JSON format.
+1.  **atsScore**: Calculate an ATS compatibility score as an integer from 0 to 100. This should be based on factors like keyword matching with the job description, resume structure, action verbs, and clarity.
+2.  **overallFeedback**: Write a brief, high-level summary of the resume's strengths and main areas for improvement.
+3.  **suggestions**: Generate a list of specific, actionable suggestions. For each suggestion, provide:
+    *   **problem**: A short description of the issue found.
+    *   **suggestion**: A clear recommendation on how to fix it.
+    *   **category**: Classify the issue into one of the following: 'Keyword Optimization', 'Formatting', 'Clarity & Impact', or 'Completeness'.
 `,
 });
 

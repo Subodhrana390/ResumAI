@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus, LanguagesIcon, ListPlus, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
-import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput } from '@/ai/flows/resume-improvement-suggestions';
+import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput, type ResumeImprovementSuggestionsOutput } from '@/ai/flows/resume-improvement-suggestions';
 import { generateExperienceBulletPoints, type GenerateExperienceBulletPointsInput } from '@/ai/flows/experience-bullet-point-generation';
 import { suggestSkills, type SuggestSkillsInput } from '@/ai/flows/skill-suggestion-flow';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { cn } from '@/lib/utils';
 import { ResumePreview } from '@/components/resume/resume-preview';
+import { Progress } from "@/components/ui/progress";
 
 // Sub-components for different resume sections
 const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => (
@@ -483,7 +484,9 @@ export default function ResumeEditorPage() {
   const [isLoadingAISummary, setIsLoadingAISummary] = useState(false);
   const [isLoadingAITailoring, setIsLoadingAITailoring] = useState(false);
   const [jobDescription, setJobDescription] = useState('');
-  const [atsSuggestions, setAtsSuggestions] = useState<string[]>([]);
+  const [atsReport, setAtsReport] = useState<ResumeImprovementSuggestionsOutput | null>(null);
+  const [prevAtsScore, setPrevAtsScore] = useState<number | null>(null);
+
   
   const hasInitializedNewRef = useRef(false);
 
@@ -564,6 +567,9 @@ export default function ResumeEditorPage() {
       return;
     }
     setIsLoadingAITailoring(true);
+    if (atsReport) {
+      setPrevAtsScore(atsReport.atsScore);
+    }
     try {
       let resumeFullContent = `Name: ${activeResume.contact.name}\nEmail: ${activeResume.contact.email}\nPhone: ${activeResume.contact.phone}\n`;
       if (activeResume.contact.linkedin) resumeFullContent += `LinkedIn: ${activeResume.contact.linkedin}\n`;
@@ -609,9 +615,9 @@ export default function ResumeEditorPage() {
         jobDescription: jobDescription,
       };
       const suggestionsResult = await getResumeImprovementSuggestions(suggestionInput);
-      setAtsSuggestions(suggestionsResult.suggestions);
+      setAtsReport(suggestionsResult);
 
-      toast({ title: "Resume Analysis Complete!", description: "Check the ATS Checker tab for improvement suggestions based on the job description." });
+      toast({ title: "Resume Analysis Complete!", description: `Your new ATS score is ${suggestionsResult.atsScore}%.` });
     } catch (error) {
       console.error("Resume ATS suggestion failed:", error);
       toast({ title: "Error", description: "Failed to analyze resume for ATS.", variant: "destructive" });
@@ -810,21 +816,75 @@ export default function ResumeEditorPage() {
                 </TabsContent>
                 <TabsContent value="ats">
                   <Card>
-                    <CardHeader><CardTitle>ATS Compatibility Check</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle>ATS Compatibility Check</CardTitle>
+                        <CardDescription>Analyze your resume against a job description to improve your chances.</CardDescription>
+                    </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <Label htmlFor="job-description">Job Description (Optional)</Label>
-                        <Textarea id="job-description" value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="Paste job description here for more targeted suggestions..." rows={5} />
+                        <Label htmlFor="job-description">Job Description</Label>
+                        <Textarea id="job-description" value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="Paste job description here for targeted suggestions..." rows={5} />
                       </div>
                       <Button onClick={handleGetAtsSuggestions} disabled={isLoadingAITailoring}>
-                        <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAITailoring ? 'Analyzing...' : 'Get ATS Suggestions'}
+                        <Sparkles className="mr-2 h-4 w-4" /> {isLoadingAITailoring ? 'Analyzing...' : 'Analyze Resume'}
                       </Button>
-                      {atsSuggestions.length > 0 && (
-                        <div className="mt-4 p-4 bg-secondary rounded-md">
-                          <h3 className="font-semibold mb-2 text-secondary-foreground">Improvement Suggestions:</h3>
-                          <ul className="list-disc list-inside space-y-1 text-sm text-secondary-foreground/90">
-                            {atsSuggestions.map((s, i) => <li key={i}>{s}</li>)}
-                          </ul>
+                      
+                       {isLoadingAITailoring && (
+                         <div className="flex items-center justify-center p-8">
+                            <Sparkles className="w-8 h-8 text-primary animate-spin" /> 
+                            <p className="ml-3 font-semibold">Analyzing your resume...</p>
+                         </div>
+                       )}
+
+                      {atsReport && !isLoadingAITailoring && (
+                        <div className="mt-4 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>ATS Analysis Report</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                        <div className="text-center">
+                                            <p className="text-sm text-muted-foreground">Current Score</p>
+                                            <p className="text-6xl font-bold text-primary">{atsReport.atsScore}%</p>
+                                            <Progress value={atsReport.atsScore} className="mt-2" />
+                                        </div>
+                                        {prevAtsScore !== null && (
+                                            <div className="text-center p-4 border-l">
+                                                <p className="text-sm text-muted-foreground">Previous Score</p>
+                                                <p className="text-4xl font-bold text-muted-foreground line-through">{prevAtsScore}%</p>
+                                                <p className={cn("mt-2 text-lg font-semibold", atsReport.atsScore > prevAtsScore ? 'text-green-500' : 'text-destructive')}>
+                                                    Change: {atsReport.atsScore - prevAtsScore > 0 ? '+' : ''}{atsReport.atsScore - prevAtsScore}%
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="pt-4">
+                                        <h4 className="font-semibold mb-2">Overall Feedback:</h4>
+                                        <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">{atsReport.overallFeedback}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <div>
+                                <h3 className="text-xl font-bold mb-3">Improvement Suggestions</h3>
+                                <div className="space-y-3">
+                                    {atsReport.suggestions.map((item, index) => (
+                                        <Card key={index} className="bg-background">
+                                            <CardHeader>
+                                                <CardTitle className="text-lg flex justify-between items-center">
+                                                    <span>{item.category}</span>
+                                                </CardTitle>
+                                                <CardDescription>{item.problem}</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <p className="font-semibold text-sm">Suggestion:</p>
+                                                <p className="text-muted-foreground text-sm">{item.suggestion}</p>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                       )}
                     </CardContent>
