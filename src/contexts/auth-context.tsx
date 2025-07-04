@@ -3,9 +3,9 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, type User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, type User as FirebaseUser, deleteUser } from 'firebase/auth';
 import { auth, firebaseConfigured, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { Loader } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,6 +32,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   upgradeToPro: () => Promise<void>;
   cancelSubscription: () => Promise<void>;
+  deleteUserAccount: () => Promise<void>;
   isFirebaseConfigured: boolean;
 }
 
@@ -230,6 +231,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast({ title: "Error", description: "Could not cancel your subscription. Please try again.", variant: "destructive" });
     }
   };
+
+  const deleteUserAccount = async () => {
+    if (!user || !auth.currentUser || !db) {
+        toast({ title: "Error", description: "You must be logged in to delete your account.", variant: "destructive" });
+        return;
+    }
+
+    const currentUser = auth.currentUser;
+
+    try {
+        // 1. Delete all resumes in the subcollection
+        const resumesColRef = collection(db, 'users', currentUser.uid, 'resumes');
+        const resumesSnapshot = await getDocs(resumesColRef);
+        const deletePromises = resumesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+
+        // 2. Delete the main user document
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await deleteDoc(userDocRef);
+
+        // 3. Delete the user from Firebase Auth
+        await deleteUser(currentUser);
+
+        toast({ title: "Account Deleted", description: "Your account and all associated data have been permanently deleted." });
+        // The onAuthStateChanged listener will automatically handle the redirect to the login page.
+    } catch (error: any) {
+        console.error("Account deletion failed:", error);
+        if (error.code === 'auth/requires-recent-login') {
+            toast({
+                title: "Authentication Required",
+                description: "This is a sensitive operation. Please log out and log back in before trying again.",
+                variant: "destructive",
+                duration: 9000,
+            });
+        } else {
+            toast({ title: "Deletion Failed", description: "An error occurred while deleting your account. Please try again.", variant: "destructive" });
+        }
+    }
+  };
   
    useEffect(() => {
     if (!isLoading) {
@@ -256,7 +296,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, upgradeToPro, cancelSubscription, isFirebaseConfigured: firebaseConfigured }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, upgradeToPro, cancelSubscription, deleteUserAccount, isFirebaseConfigured: firebaseConfigured }}>
       {children}
     </AuthContext.Provider>
   );

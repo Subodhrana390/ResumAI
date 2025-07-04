@@ -24,17 +24,12 @@ import { Crown } from "lucide-react";
 import { format } from "date-fns";
 
 export default function SettingsPage() {
-  const { user, upgradeToPro, cancelSubscription } = useAuth();
+  const { user, upgradeToPro, cancelSubscription, deleteUserAccount } = useAuth();
   const { toast } = useToast();
 
-  const handleDeleteAccount = () => {
-    // In a real app, this would involve more complex logic,
-    // like deleting user data from Firestore and then deleting the user account.
-    toast({
-      title: "Account Deletion (Not Implemented)",
-      description: "This feature is not yet implemented in this prototype.",
-      variant: "default",
-    });
+  const handleDeleteAccount = async () => {
+    await deleteUserAccount();
+    // The auth context listener will handle redirecting the user upon successful deletion.
   };
 
   if (!user) {
