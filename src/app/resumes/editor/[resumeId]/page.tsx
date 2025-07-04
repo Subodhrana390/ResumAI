@@ -745,6 +745,7 @@ export default function ResumeEditorPage() {
     { id: 'modern', name: 'Modern', imageUrl: 'https://placehold.co/150x200.png?text=Modern+Design', description: "A sleek, contemporary style.", dataAiHint: "modern resume" },
     { id: 'compact', name: 'Compact', imageUrl: 'https://placehold.co/150x200.png?text=Compact+Design', description: "A space-saving, concise format.", dataAiHint: "compact resume" },
     { id: 'two-column-classic', name: 'Two Column', imageUrl: 'https://placehold.co/150x200.png?text=Two+Column', description: "Classic two-column structure.", dataAiHint: "two column resume" },
+    { id: 'creative', name: 'Creative', imageUrl: 'https://placehold.co/150x200.png?text=Creative', description: "A bold, stylish design.", dataAiHint: "creative resume" },
   ];
 
   return (

@@ -320,4 +320,89 @@ body {
   .template-two-column-classic .resume-item-content p { /* For summary text */
     @apply whitespace-pre-line;
   }
+  
+  /* --- Creative Template --- */
+  .template-creative {
+    @apply font-sans;
+  }
+
+  .template-creative .creative-layout {
+    @apply grid grid-cols-12 gap-x-0;
+  }
+
+  .template-creative .creative-sidebar {
+    @apply col-span-4 bg-primary text-primary-foreground p-6 rounded-l-lg;
+  }
+  
+  .dark .template-creative .creative-sidebar {
+     @apply bg-primary/80 text-primary-foreground;
+  }
+
+  .template-creative .creative-main {
+    @apply col-span-8 p-6 bg-card;
+  }
+
+  .template-creative .creative-header {
+    @apply text-center mb-8;
+  }
+
+  .template-creative .creative-header h1 {
+    @apply text-3xl font-bold mb-1 tracking-tight;
+  }
+
+  .template-creative .creative-header p {
+    @apply text-sm opacity-90;
+  }
+
+  .template-creative .sidebar-section {
+    @apply mb-6;
+  }
+
+  .template-creative .sidebar-section-title {
+    @apply text-base font-semibold uppercase tracking-wider mb-2 pb-1 border-b border-primary-foreground/50;
+  }
+
+  .template-creative .sidebar-contact-item {
+    @apply text-sm mb-1 break-words;
+  }
+
+  .template-creative .sidebar-contact-item a {
+    @apply hover:underline;
+  }
+
+  .template-creative .sidebar-skills-list {
+    @apply flex flex-wrap gap-2 mt-2;
+  }
+
+  .template-creative .sidebar-skill-badge {
+    @apply bg-primary-foreground/20 text-primary-foreground px-2 py-1 rounded text-xs font-medium;
+  }
+
+  .template-creative .main-section {
+    @apply mb-6;
+  }
+
+  .template-creative .main-section-title {
+    @apply text-xl font-bold text-primary mb-3 pb-1.5 border-b-2 border-primary;
+  }
+
+  .template-creative .main-item {
+    @apply mb-4;
+  }
+
+  .template-creative .main-item-title {
+    @apply text-lg font-semibold;
+  }
+
+  .template-creative .main-item-subtitle {
+    @apply text-sm text-muted-foreground font-medium;
+  }
+
+  .template-creative .main-item-content ul {
+    @apply list-disc pl-5 mt-1 space-y-1 text-sm;
+  }
+
+  .template-creative .main-item-content p {
+    @apply text-sm whitespace-pre-line text-foreground;
+  }
 }

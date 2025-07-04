@@ -20,6 +20,119 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
 
   const templateClass = `template-${resumeData.template || 'classic'}`;
 
+  if (resumeData.template === 'creative') {
+    return (
+        <Card className="h-full shadow-lg bg-card text-card-foreground">
+            <CardContent className={cn("p-0 print-container", templateClass)} id="resume-preview-content">
+                <div className="creative-layout">
+                    {/* Left Sidebar */}
+                    <div className="creative-sidebar">
+                        <div className="creative-header">
+                            <h1>{resumeData.contact.name || "Your Name"}</h1>
+                            {resumeData.experience?.[0]?.jobTitle && <p>{resumeData.experience[0].jobTitle}</p>}
+                        </div>
+
+                        {/* Contact Section */}
+                        <div className="sidebar-section">
+                            <h2 className="sidebar-section-title">Contact</h2>
+                            {resumeData.contact.email && <p className="sidebar-contact-item">{resumeData.contact.email}</p>}
+                            {resumeData.contact.phone && <p className="sidebar-contact-item">{resumeData.contact.phone}</p>}
+                            {resumeData.contact.address && resumeData.settings.showAddress && <p className="sidebar-contact-item">{resumeData.contact.address}</p>}
+                            {resumeData.contact.linkedin && <p className="sidebar-contact-item"><a href={ensureProtocol(resumeData.contact.linkedin)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.linkedin}</a></p>}
+                            {resumeData.contact.github && resumeData.settings.showGithub && <p className="sidebar-contact-item"><a href={ensureProtocol(resumeData.contact.github)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.github}</a></p>}
+                            {resumeData.contact.portfolio && resumeData.settings.showPortfolio && <p className="sidebar-contact-item"><a href={ensureProtocol(resumeData.contact.portfolio)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.portfolio}</a></p>}
+                        </div>
+
+                        {/* Skills Section */}
+                        {resumeData.skills?.length > 0 && (
+                            <div className="sidebar-section">
+                                <h2 className="sidebar-section-title">Skills</h2>
+                                <div className="sidebar-skills-list">
+                                    {resumeData.skills.map((skill: ResumeSkill) => (
+                                        <span key={skill.id} className="sidebar-skill-badge">{skill.name}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Languages Section */}
+                        {resumeData.languages?.length > 0 && (
+                            <div className="sidebar-section">
+                                <h2 className="sidebar-section-title">Languages</h2>
+                                {resumeData.languages.map((lang: ResumeLanguage) => (
+                                  <p key={lang.id} className="sidebar-contact-item">
+                                    {lang.name}
+                                    {lang.proficiency && <span className="opacity-80"> ({lang.proficiency})</span>}
+                                  </p>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="creative-main">
+                        {resumeData.summary && (
+                            <div className="main-section">
+                                <h2 className="main-section-title">Profile</h2>
+                                <div className="main-item-content">
+                                  <p>{resumeData.summary}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {resumeData.experience?.length > 0 && (
+                            <div className="main-section">
+                                <h2 className="main-section-title">Experience</h2>
+                                {resumeData.experience.map((exp: ResumeExperience) => (
+                                    <div key={exp.id} className="main-item">
+                                        <h3 className="main-item-title">{exp.jobTitle}</h3>
+                                        <p className="main-item-subtitle">{exp.company} | {exp.location} | {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate}</p>
+                                        <div className="main-item-content">
+                                            <ul>
+                                                {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {resumeData.education?.length > 0 && (
+                            <div className="main-section">
+                                <h2 className="main-section-title">Education</h2>
+                                {resumeData.education.map((edu: ResumeEducation) => (
+                                    <div key={edu.id} className="main-item">
+                                        <h3 className="main-item-title">{edu.degree}, {edu.fieldOfStudy}</h3>
+                                        <p className="main-item-subtitle">{edu.institution} | {edu.startDate} - {edu.endDate}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {resumeData.customSections?.length > 0 && resumeData.customSections.map((section: ResumeCustomSection) => (
+                            <div key={section.id} className="main-section">
+                                <h2 className="main-section-title">{section.title}</h2>
+                                {section.items.map((item: ResumeCustomSectionItem) => (
+                                    <div key={item.id} className="main-item">
+                                        <h3 className="main-item-title">{item.content}</h3>
+                                        {(item.subContent || item.date) &&
+                                            <p className="main-item-subtitle">
+                                                {item.subContent}
+                                                {item.subContent && item.date && " | "}
+                                                {item.date}
+                                            </p>
+                                        }
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+  }
+
   if (resumeData.template === 'two-column-classic') {
     const leftColumnCustomSections = ['Career Objective', 'Software', 'Certifications', 'Awards', 'Hobbies', 'Interests']; // Titles for left column
     
