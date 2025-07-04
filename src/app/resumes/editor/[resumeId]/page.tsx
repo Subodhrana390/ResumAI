@@ -26,6 +26,9 @@ import html2canvas from 'html2canvas';
 import { cn } from '@/lib/utils';
 import { ResumePreview } from '@/components/resume/resume-preview';
 import { Progress } from "@/components/ui/progress";
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+
 
 // Sub-components for different resume sections
 const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => (
@@ -44,7 +47,10 @@ const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field
         <div><Label htmlFor="linkedin">LinkedIn</Label><Input id="linkedin" value={resume.contact.linkedin} onChange={e => updateField('contact.linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" /></div>
         <div><Label htmlFor="github">GitHub</Label><Input id="github" value={resume.contact.github} onChange={e => updateField('contact.github', e.target.value)} placeholder="github.com/johndoe" /></div>
       </div>
-      <div><Label htmlFor="portfolio">Portfolio/Website</Label><Input id="portfolio" value={resume.contact.portfolio} onChange={e => updateField('contact.portfolio', e.target.value)} placeholder="johndoe.com" /></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><Label htmlFor="portfolio">Portfolio/Website</Label><Input id="portfolio" value={resume.contact.portfolio} onChange={e => updateField('contact.portfolio', e.target.value)} placeholder="johndoe.com" /></div>
+        <div><Label htmlFor="photoUrl">Photo URL</Label><Input id="photoUrl" value={resume.contact.photoUrl || ''} onChange={e => updateField('contact.photoUrl', e.target.value)} placeholder="https://..." /></div>
+      </div>
     </CardContent>
   </Card>
 );
@@ -811,6 +817,23 @@ export default function ResumeEditorPage() {
                             </div>
                         ))}
                        </div>
+                       <Separator />
+                        <div>
+                            <h4 className="font-semibold mb-2 text-base">Display Options</h4>
+                            <div className="flex items-center justify-between rounded-lg border p-3">
+                                <div className="space-y-0.5">
+                                    <Label>Show Photo</Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Display your photo on the resume. (Recommended for Creative templates)
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={activeResume.settings.showPhoto}
+                                    onCheckedChange={(checked) => handleUpdateField('settings.showPhoto', checked)}
+                                    aria-label="Toggle photo visibility"
+                                />
+                            </div>
+                        </div>
                        <p className="text-muted-foreground text-sm mt-6">More customization options like font and color coming soon!</p>
                     </CardContent>
                   </Card>

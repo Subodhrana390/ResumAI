@@ -7,6 +7,7 @@ export interface ResumeContact {
   github: string;
   portfolio: string;
   address: string;
+  photoUrl?: string;
 }
 
 export interface ResumeExperience {
@@ -89,6 +90,7 @@ export interface ResumeData {
     showAddress: boolean;
     showGithub: boolean;
     showPortfolio: boolean;
+    showPhoto: boolean;
   };
 }
 
@@ -104,6 +106,7 @@ export const defaultResumeData: ResumeData = {
     github: '',
     portfolio: '',
     address: '',
+    photoUrl: '',
   },
   summary: '',
   experience: [],
@@ -122,5 +125,6 @@ export const defaultResumeData: ResumeData = {
     showAddress: true,
     showGithub: true,
     showPortfolio: true,
+    showPhoto: true,
   }
 };

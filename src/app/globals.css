@@ -117,7 +117,10 @@ body {
 
   /* --- Classic Template --- */
   .template-classic .resume-header {
-    @apply text-center mb-6 pb-2 border-b-2 border-gray-400 dark:border-gray-600;
+    @apply flex items-center gap-6 text-left mb-6 pb-2 border-b-2 border-gray-400 dark:border-gray-600;
+  }
+  .template-classic .resume-header-content {
+    @apply flex-grow;
   }
   .template-classic .resume-header h1 {
     @apply text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1 font-serif; /* Serif for name */
@@ -155,7 +158,10 @@ body {
     @apply font-sans; /* Ensure sans-serif base for modern */
   }
   .template-modern .resume-header {
-    @apply text-left border-b-2 border-primary pb-2 mb-4 sm:pb-4 sm:mb-8; /* More bottom margin */
+    @apply flex items-center gap-6 text-left border-b-2 border-primary pb-2 mb-4 sm:pb-4 sm:mb-8; /* More bottom margin */
+  }
+  .template-modern .resume-header-content {
+    @apply flex-grow;
   }
   .template-modern .resume-header h1 {
     @apply text-3xl sm:text-4xl font-bold text-primary mb-0.5; /* Primary color for name */
@@ -197,7 +203,10 @@ body {
     @apply text-xs; /* Base smaller text size */
   }
   .template-compact .resume-header {
-    @apply text-left mb-3 pb-1 border-b border-gray-300 dark:border-gray-700;
+    @apply flex items-center gap-4 text-left mb-3 pb-1 border-b border-gray-300 dark:border-gray-700;
+  }
+  .template-compact .resume-header-content {
+    @apply flex-grow;
   }
   .template-compact .resume-header h1 {
     @apply text-2xl font-bold text-gray-800 dark:text-gray-100 mb-0.5;

@@ -5,6 +5,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { ResumeData, ResumeExperience, ResumeEducation, ResumeSkill, ResumeLanguage, ResumeCustomSection, ResumeCustomSectionItem } from '@/types/resume';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const ensureProtocol = (url: string) => {
     if (!url) return "#";
@@ -19,6 +20,7 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
   if (!resumeData) return <div className="p-8 bg-muted rounded-lg text-center text-muted-foreground">Select a resume to preview.</div>;
 
   const templateClass = `template-${resumeData.template || 'classic'}`;
+  const showPhoto = resumeData.settings.showPhoto && resumeData.contact.photoUrl;
 
   if (resumeData.template === 'creative') {
     return (
@@ -27,6 +29,14 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                 <div className="creative-layout">
                     {/* Left Sidebar */}
                     <div className="creative-sidebar">
+                        {showPhoto && (
+                            <div className="flex justify-center mb-6">
+                                <Avatar className="h-32 w-32 border-4 border-primary-foreground/20">
+                                    <AvatarImage src={resumeData.contact.photoUrl} alt={resumeData.contact.name} data-ai-hint="person portrait" />
+                                    <AvatarFallback>{resumeData.contact.name?.charAt(0) || 'U'}</AvatarFallback>
+                                </Avatar>
+                            </div>
+                        )}
                         <div className="creative-header">
                             <h1>{resumeData.contact.name || "Your Name"}</h1>
                             {resumeData.experience?.[0]?.jobTitle && <p>{resumeData.experience[0].jobTitle}</p>}
@@ -184,6 +194,14 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                 
                 <div className="resume-layout-grid">
                     <div className="resume-left-column">
+                        {showPhoto && (
+                            <div className="flex justify-center mb-4">
+                                <Avatar className="h-28 w-28">
+                                    <AvatarImage src={resumeData.contact.photoUrl} alt={resumeData.contact.name} data-ai-hint="person portrait" />
+                                    <AvatarFallback>{resumeData.contact.name?.charAt(0) || 'U'}</AvatarFallback>
+                                </Avatar>
+                            </div>
+                        )}
                         {detailsSection}
                         {skillsSection}
                         {languagesSection}
@@ -280,19 +298,27 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
     <Card className="h-full shadow-lg bg-card text-card-foreground">
       <CardContent className={cn("p-6 md:p-8 print-container", templateClass)} id="resume-preview-content">
         <div className="resume-header">
-          <h1>{resumeData.contact.name || "Your Name"}</h1>
-          <p>
-            {resumeData.contact.email || "your.email@example.com"}
-            {resumeData.contact.phone && ` | ${resumeData.contact.phone}`}
-            {resumeData.contact.address && resumeData.settings.showAddress && ` | ${resumeData.contact.address}`}
-          </p>
-          { (resumeData.contact.linkedin || (resumeData.contact.github && resumeData.settings.showGithub) || (resumeData.contact.portfolio && resumeData.settings.showPortfolio)) && 
+            {showPhoto && (
+                <Avatar className="h-24 w-24 flex-shrink-0">
+                    <AvatarImage src={resumeData.contact.photoUrl} alt={resumeData.contact.name} data-ai-hint="person portrait" />
+                    <AvatarFallback>{resumeData.contact.name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+            )}
+          <div className="resume-header-content">
+            <h1>{resumeData.contact.name || "Your Name"}</h1>
             <p>
-              {resumeData.contact.linkedin && <a href={ensureProtocol(resumeData.contact.linkedin)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.linkedin}</a>}
-              {resumeData.contact.github && resumeData.settings.showGithub && <> | <a href={ensureProtocol(resumeData.contact.github)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.github}</a></>}
-              {resumeData.contact.portfolio && resumeData.settings.showPortfolio && <> | <a href={ensureProtocol(resumeData.contact.portfolio)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.portfolio}</a></>}
+                {resumeData.contact.email || "your.email@example.com"}
+                {resumeData.contact.phone && ` | ${resumeData.contact.phone}`}
+                {resumeData.contact.address && resumeData.settings.showAddress && ` | ${resumeData.contact.address}`}
             </p>
-          }
+            { (resumeData.contact.linkedin || (resumeData.contact.github && resumeData.settings.showGithub) || (resumeData.contact.portfolio && resumeData.settings.showPortfolio)) && 
+                <p>
+                <a href={ensureProtocol(resumeData.contact.linkedin)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.linkedin}</a>
+                {resumeData.contact.github && resumeData.settings.showGithub && <> | <a href={ensureProtocol(resumeData.contact.github)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.github}</a></>}
+                {resumeData.contact.portfolio && resumeData.settings.showPortfolio && <> | <a href={ensureProtocol(resumeData.contact.portfolio)} target="_blank" rel="noreferrer" className="hover:underline">{resumeData.contact.portfolio}</a></>}
+                </p>
+            }
+          </div>
         </div>
 
         {resumeData.summary && (
