@@ -29,10 +29,11 @@ import { ResumePreview } from '@/components/resume/resume-preview';
 import { Progress } from "@/components/ui/progress";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 // Sub-components for different resume sections
-const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => (
+const ContactForm = ({ resume, updateField, handlePhotoUpload, isUploadingPhoto }: { resume: any, updateField: (field: string, value: any) => void, handlePhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void, isUploadingPhoto: boolean }) => (
   <Card>
     <CardHeader><CardTitle className="flex items-center gap-2"><Info className="w-5 h-5 text-primary" />Contact Information</CardTitle></CardHeader>
     <CardContent className="space-y-4">
@@ -48,9 +49,26 @@ const ContactForm = ({ resume, updateField }: { resume: any, updateField: (field
         <div><Label htmlFor="linkedin">LinkedIn</Label><Input id="linkedin" value={resume.contact.linkedin} onChange={e => updateField('contact.linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" /></div>
         <div><Label htmlFor="github">GitHub</Label><Input id="github" value={resume.contact.github} onChange={e => updateField('contact.github', e.target.value)} placeholder="github.com/johndoe" /></div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1">
         <div><Label htmlFor="portfolio">Portfolio/Website</Label><Input id="portfolio" value={resume.contact.portfolio} onChange={e => updateField('contact.portfolio', e.target.value)} placeholder="johndoe.com" /></div>
-        <div><Label htmlFor="photoUrl">Photo URL</Label><Input id="photoUrl" value={resume.contact.photoUrl || ''} onChange={e => updateField('contact.photoUrl', e.target.value)} placeholder="https://..." /></div>
+      </div>
+      <Separator />
+      <div className="space-y-2">
+        <Label>Profile Photo</Label>
+        <div className="flex items-center gap-4">
+          {resume.contact.photoUrl && (
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={resume.contact.photoUrl} alt={resume.contact.name || "User Avatar"} />
+              <AvatarFallback>{resume.contact.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+            </Avatar>
+          )}
+          <div className="flex-grow space-y-2">
+            <Input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
+            <p className="text-xs text-muted-foreground">
+              {isUploadingPhoto ? 'Uploading...' : 'Upload a square image (PNG, JPG, WEBP).'}
+            </p>
+          </div>
+        </div>
       </div>
     </CardContent>
   </Card>
@@ -611,6 +629,7 @@ export default function ResumeEditorPage() {
   const [jobDescription, setJobDescription] = useState('');
   const [atsReport, setAtsReport] = useState<ResumeImprovementSuggestionsOutput | null>(null);
   const [prevAtsScore, setPrevAtsScore] = useState<number | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   
   const hasInitializedNewRef = useRef(false);
@@ -840,6 +859,55 @@ export default function ResumeEditorPage() {
     }
   };
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      // 1. Get signature from our API
+      const signatureResponse = await fetch('/api/upload-signature', {
+        method: 'POST',
+      });
+      const { timestamp, signature, apiKey, cloudName } = await signatureResponse.json();
+
+      if (!signature) {
+        throw new Error('Failed to get upload signature from server.');
+      }
+
+      // 2. Upload to Cloudinary
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('timestamp', timestamp);
+      formData.append('signature', signature);
+      formData.append('api_key', apiKey);
+
+      const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.error.message || 'Cloudinary upload failed.');
+      }
+
+      const uploadedImageData = await uploadResponse.json();
+      const secureUrl = uploadedImageData.secure_url;
+
+      // 3. Update resume state
+      handleUpdateField('contact.photoUrl', secureUrl);
+      toast({ title: 'Photo Uploaded!', description: 'Your new photo has been saved.' });
+    } catch (error: any) {
+      console.error('Photo upload failed:', error);
+      toast({ title: 'Upload Failed', description: error.message || 'Could not upload your photo.', variant: 'destructive' });
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset file input value so user can upload the same file again
+      event.target.value = '';
+    }
+  };
+
 
   if (!activeResume && resumeId !== 'new') { 
     return (
@@ -908,7 +976,7 @@ export default function ResumeEditorPage() {
                   <TabsTrigger value="ats"><CheckSquare className="mr-2 h-4 w-4" />ATS Check</TabsTrigger>
                 </TabsList>
                 <TabsContent value="content" className="space-y-6">
-                  <ContactForm resume={activeResume} updateField={handleUpdateField} />
+                  <ContactForm resume={activeResume} updateField={handleUpdateField} handlePhotoUpload={handlePhotoUpload} isUploadingPhoto={isUploadingPhoto}/>
                   <SummaryForm resume={activeResume} updateField={handleUpdateField} generateAISummary={handleGenerateAISummary} isLoadingAISummary={isLoadingAISummary} />
                   <ExperienceForm resume={activeResume} updateField={handleUpdateField} toast={toast} />
                   <ProjectsForm resume={activeResume} updateField={handleUpdateField} toast={toast} />
@@ -1030,7 +1098,7 @@ export default function ResumeEditorPage() {
                                                     <span>{item.category}</span>
                                                 </CardTitle>
                                                 <CardDescription>{item.problem}</CardDescription>
-                                            </CardHeader>
+                                            </Header>
                                             <CardContent>
                                                 <p className="font-semibold text-sm">Suggestion:</p>
                                                 <p className="text-muted-foreground text-sm">{item.suggestion}</p>
