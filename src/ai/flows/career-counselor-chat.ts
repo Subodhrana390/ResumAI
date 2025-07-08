@@ -9,8 +9,8 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {type MessageData} from 'genkit';
-import {z} from 'genkit';
+import {type MessageData} from '@genkit-ai/ai';
+import {z} from 'zod';
 
 export const ChatMessageSchema = z.object({
   role: z.enum(['user', 'model']),
@@ -49,7 +49,7 @@ export async function chatWithCounselor(
   }));
 
   const response = await ai.generate({
-    model: ai.model,
+    model: 'googleai/gemini-2.0-flash',
     system: systemPrompt,
     history: history,
     prompt: input.newMessage,

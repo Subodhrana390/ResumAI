@@ -11,7 +11,7 @@
 'use server';
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const ResumeImprovementSuggestionsInputSchema = z.object({
   resumeContent: z

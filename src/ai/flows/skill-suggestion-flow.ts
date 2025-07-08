@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const SuggestSkillsInputSchema = z.object({
   jobTitle: z.string().describe('The target job title for the resume.'),
