@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { Home, FilePlus, BotMessageSquare, Settings, LogOut, Menu, Loader, ScanSearch, FileText, Linkedin, MessageCircle } from 'lucide-react';
+import { Home, FilePlus, BotMessageSquare, Settings, LogOut, Menu, Loader, ScanSearch, FileText, Linkedin, MessageCircle, Users } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { Separator } from '../ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -28,6 +28,7 @@ const navItems = [
   { href: '/resumes', label: 'My Resumes', icon: Home },
   { href: '/resumes/editor/new', label: 'New Resume', icon: FilePlus },
   { href: '/ats-checker', label: 'ATS Checker', icon: ScanSearch },
+  { href: '/peer-review', label: 'Peer Review', icon: Users },
 ];
 
 const proNavItems = [

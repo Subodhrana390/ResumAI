@@ -157,6 +157,15 @@ export default function StudentLandingPage() {
                   <CardDescription className="text-gray-600">Showcase your awards, leadership roles, and extracurricular activities effectively.</CardDescription>
                 </CardHeader>
               </Card>
+              <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-0 shadow-md bg-white">
+                <CardHeader className="pb-4">
+                  <div className="p-4 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 inline-block mb-4 w-fit">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="font-headline text-gray-900">Peer Review Network</CardTitle>
+                  <CardDescription className="text-gray-600">Get feedback from other students and career counselors to perfect your resume.</CardDescription>
+                </CardHeader>
+              </Card>
             </div>
           </div>
         </section>
