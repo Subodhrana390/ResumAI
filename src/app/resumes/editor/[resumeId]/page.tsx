@@ -30,6 +30,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 // Sub-components for different resume sections
@@ -158,7 +159,23 @@ const ExperienceForm = ({ resume, updateField, toast }: { resume: any, updateFie
             <div><Label>Location</Label><Input value={exp.location} onChange={e => updateExperience(index, 'location', e.target.value)} placeholder="City, State" /></div>
             <div><Label>Start Date</Label><Input type="month" value={exp.startDate} onChange={e => updateExperience(index, 'startDate', e.target.value)} /></div>
            </div>
-           <div><Label>End Date</Label><Input type="month" value={exp.endDate} onChange={e => updateExperience(index, 'endDate', e.target.value)} disabled={exp.isCurrent} /><div className="flex items-center mt-1"><Input type="checkbox" checked={exp.isCurrent} onChange={e => updateExperience(index, 'isCurrent', e.target.checked)} className="w-4 h-4 mr-2" /><Label>Currently working here</Label></div></div>
+           <div>
+              <Label>End Date</Label>
+              <Input type="month" value={exp.endDate} onChange={e => updateExperience(index, 'endDate', e.target.value)} disabled={exp.isCurrent} />
+              <div className="flex items-center space-x-2 mt-2">
+                <Checkbox
+                  id={`current-${exp.id}`}
+                  checked={exp.isCurrent}
+                  onCheckedChange={(checked) => updateExperience(index, 'isCurrent', !!checked)}
+                />
+                <label
+                  htmlFor={`current-${exp.id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Currently working here
+                </label>
+              </div>
+            </div>
            
           <div>
             <div className="flex justify-between items-center mb-1">
@@ -908,36 +925,24 @@ export default function ResumeEditorPage() {
     }
   };
 
-
-  if (!activeResume && resumeId !== 'new') { 
+  if (!activeResume) {
+    if (resumeId === 'new') {
+      return (
+        <AppShell>
+          <div className="flex flex-col items-center justify-center h-full">
+            <FilePlus className="w-16 h-16 text-muted-foreground mb-4 animate-pulse" />
+            <p className="text-xl text-muted-foreground font-semibold">Creating new resume...</p>
+          </div>
+        </AppShell>
+      );
+    }
+    // Handles both loading an existing resume and error state
     return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">
           <FileText className="w-16 h-16 text-muted-foreground mb-4" />
           <p className="text-xl text-muted-foreground font-semibold">Loading resume data...</p>
           <Button onClick={() => router.push('/resumes')} className="mt-4">Go to Dashboard</Button>
-        </div>
-      </AppShell>
-    );
-  }
-  
-  if (!activeResume && resumeId === 'new') {
-     return (
-      <AppShell>
-        <div className="flex flex-col items-center justify-center h-full">
-            <FilePlus className="w-16 h-16 text-muted-foreground mb-4 animate-pulse" />
-            <p className="text-xl text-muted-foreground font-semibold">Creating new resume...</p>
-        </div>
-      </AppShell>
-     );
-  }
-  
-  if (!activeResume) { 
-    return (
-      <AppShell>
-        <div className="flex flex-col items-center justify-center h-full">
-           <p className="text-xl text-muted-foreground font-semibold">Error: No active resume. Please try creating one or selecting from dashboard.</p>
-           <Button onClick={() => router.push('/resumes')} className="mt-4">Go to Dashboard</Button>
         </div>
       </AppShell>
     );
