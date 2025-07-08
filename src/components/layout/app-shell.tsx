@@ -55,16 +55,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const renderNavGroup = (items: typeof navItems, isMobile = false) => (
       items.map((item) => (
         <SidebarMenuItem key={item.label}>
-          <Link href={item.href} passHref legacyBehavior>
             <SidebarMenuButton
               isActive={pathname === item.href || (item.href !== '/resumes' && pathname.startsWith(item.href))}
               tooltip={isMobile ? undefined : item.label}
               className="justify-start"
+              asChild
             >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
+              <Link href={item.href}>
+                <item.icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
             </SidebarMenuButton>
-          </Link>
         </SidebarMenuItem>
       ))
   );
