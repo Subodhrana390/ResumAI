@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { BotMessageSquare, GraduationCap, Briefcase, Users, Award, BookOpen, Target, FileText, Linkedin, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import img from "../../public/images/Main_bg.png";
 
 export default function StudentLandingPage() {
   return (
@@ -84,7 +83,7 @@ export default function StudentLandingPage() {
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20"></div>
                 <Image
-                  src={img}
+                  src="/images/Main_bg.png"
                   width="600"
                   height="400"
                   alt="Student Resume Interface"
