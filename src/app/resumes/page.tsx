@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppShell } from '@/components/layout/app-shell';
 import { useResumeContext } from '@/contexts/resume-context';
-import { FilePlus, Edit3, Trash2, Copy, MoreVertical, Eye, Download, FileText } from 'lucide-react';
+import { FilePlus, Edit3, Trash2, Copy, MoreVertical, Eye, Download, FileText, Loader } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ export default function ResumesDashboardPage() {
   const { user } = useAuth();
   const { resumes, isLoading, createResume, deleteResume, duplicateResume, loadResumes } = useResumeContext();
   const router = useRouter();
+  const [isCreating, setIsCreating] = useState(false);
   const [previewingResume, setPreviewingResume] = useState<ResumeData | null>(null);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const { toast } = useToast();
@@ -44,10 +45,13 @@ export default function ResumesDashboardPage() {
 
 
   const handleCreateNewResume = async () => {
+    setIsCreating(true);
     const newResume = await createResume();
     if (newResume) {
         router.push(`/resumes/editor/${newResume.id}`);
     }
+    // If it fails, the context shows a toast, so we just stop the loading spinner.
+    setIsCreating(false);
   };
 
   const handleEditResume = (id: string) => {
@@ -182,8 +186,13 @@ export default function ResumesDashboardPage() {
     <AppShell>
       <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold font-headline tracking-tight">My Resumes</h1>
-        <Button onClick={handleCreateNewResume} size="lg" disabled={!canCreateResume}>
-          <FilePlus className="mr-2 h-5 w-5" /> Create New Resume
+        <Button onClick={handleCreateNewResume} size="lg" disabled={!canCreateResume || isCreating}>
+          {isCreating ? (
+            <Loader className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <FilePlus className="mr-2 h-5 w-5" />
+          )}
+          {isCreating ? 'Creating...' : 'Create New Resume'}
         </Button>
       </div>
 
@@ -203,8 +212,13 @@ export default function ResumesDashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleCreateNewResume} size="lg">
-              <FilePlus className="mr-2 h-5 w-5" /> Create Your First Resume
+            <Button onClick={handleCreateNewResume} size="lg" disabled={isCreating}>
+               {isCreating ? (
+                  <Loader className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <FilePlus className="mr-2 h-5 w-5" />
+                )}
+              {isCreating ? 'Creating...' : 'Create Your First Resume'}
             </Button>
           </CardContent>
         </Card>

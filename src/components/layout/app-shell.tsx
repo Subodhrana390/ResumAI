@@ -26,7 +26,6 @@ import { useAuth } from '@/contexts/auth-context';
 
 const navItems = [
   { href: '/resumes', label: 'My Resumes', icon: Home },
-  { href: '/resumes/editor/new', label: 'New Resume', icon: FilePlus },
   { href: '/ats-checker', label: 'ATS Checker', icon: ScanSearch },
   { href: '/peer-review', label: 'Peer Review', icon: Users },
 ];

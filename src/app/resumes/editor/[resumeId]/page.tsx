@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus, LanguagesIcon, ListPlus, GripVertical, ArrowUp, ArrowDown, BookCopy } from 'lucide-react';
+import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus, LanguagesIcon, ListPlus, GripVertical, ArrowUp, ArrowDown, BookCopy, Loader } from 'lucide-react';
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
 import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput, type ResumeImprovementSuggestionsOutput } from '@/ai/flows/resume-improvement-suggestions';
 import { generateExperienceBulletPoints, type GenerateExperienceBulletPointsInput } from '@/ai/flows/experience-bullet-point-generation';
@@ -639,7 +639,7 @@ const CustomSectionsForm = ({ resume, updateField }: { resume: any, updateField:
 export default function ResumeEditorPage() {
   const { resumeId } = useParams() as { resumeId: string };
   const router = useRouter();
-  const { activeResume, setActiveResumeById, updateActiveResume, saveActiveResume, createResume } = useResumeContext();
+  const { activeResume, setActiveResumeById, updateActiveResume, saveActiveResume, isLoading } = useResumeContext();
   const { toast } = useToast();
   const [isLoadingAISummary, setIsLoadingAISummary] = useState(false);
   const [isLoadingAITailoring, setIsLoadingAITailoring] = useState(false);
@@ -648,36 +648,9 @@ export default function ResumeEditorPage() {
   const [prevAtsScore, setPrevAtsScore] = useState<number | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  
-  const hasInitializedNewRef = useRef(false);
-
   useEffect(() => {
-    let isMounted = true;
-    const initializeNewResume = async () => {
-      if (!hasInitializedNewRef.current) {
-        hasInitializedNewRef.current = true;
-        try {
-          const newResume = await createResume();
-          if (isMounted && newResume?.id) {
-            router.replace(`/resumes/editor/${newResume.id}`, { scroll: false });
-          }
-        } catch (error) {
-          console.error("Failed to initialize new resume:", error);
-          if (isMounted) router.push('/resumes');
-        }
-      }
-    };
-
-    if (resumeId === 'new') {
-      initializeNewResume();
-    } else if (resumeId) {
-      if (!activeResume || activeResume.id !== resumeId) {
-        setActiveResumeById(resumeId);
-      }
-    }
-    return () => { isMounted = false; };
-  }, [resumeId, createResume, router, activeResume, setActiveResumeById]);
-
+    setActiveResumeById(resumeId);
+  }, [resumeId, setActiveResumeById]);
 
   const handleUpdateField = useCallback((fieldPath: string, value: any) => {
     updateActiveResume(prev => {
@@ -924,24 +897,25 @@ export default function ResumeEditorPage() {
       event.target.value = '';
     }
   };
-
-  if (!activeResume) {
-    if (resumeId === 'new') {
-      return (
-        <AppShell>
-          <div className="flex flex-col items-center justify-center h-full">
-            <FilePlus className="w-16 h-16 text-muted-foreground mb-4 animate-pulse" />
-            <p className="text-xl text-muted-foreground font-semibold">Creating new resume...</p>
-          </div>
-        </AppShell>
-      );
-    }
-    // Handles both loading an existing resume and error state
+  
+  if (isLoading) {
     return (
       <AppShell>
         <div className="flex flex-col items-center justify-center h-full">
+          <Loader className="w-16 h-16 text-primary animate-spin mb-4" />
+          <p className="text-xl text-muted-foreground font-semibold">Loading Editor...</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!activeResume) {
+    return (
+      <AppShell>
+        <div className="flex flex-col items-center justify-center h-full text-center">
           <FileText className="w-16 h-16 text-muted-foreground mb-4" />
-          <p className="text-xl text-muted-foreground font-semibold">Loading resume data...</p>
+          <p className="text-xl text-muted-foreground font-semibold">Resume Not Found</p>
+          <p className="text-muted-foreground">The resume you are looking for does not exist or could not be loaded.</p>
           <Button onClick={() => router.push('/resumes')} className="mt-4">Go to Dashboard</Button>
         </div>
       </AppShell>

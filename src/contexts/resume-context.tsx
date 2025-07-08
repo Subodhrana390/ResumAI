@@ -68,11 +68,11 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
         return null;
     }
 
-    // Subscription check: Free plan limit is 1 resume
-    if (user.subscription.plan === 'free' && resumes.length >= 1) {
+    // Subscription check: Free plan limit is 5 resumes
+    if (user.subscription.plan === 'free' && resumes.length >= 5) {
         toast({
             title: "Upgrade to Pro to Create More Resumes",
-            description: "The Free plan is limited to 1 resume. Please upgrade to create more.",
+            description: "The Free plan is limited to 5 resumes. Please upgrade to create more.",
             variant: "destructive"
         });
         return null;
@@ -168,10 +168,10 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
       return null;
     }
 
-    if (user.subscription.plan === 'free' && resumes.length >= 1) {
+    if (user.subscription.plan === 'free' && resumes.length >= 5) {
         toast({
             title: "Upgrade to Pro to Duplicate",
-            description: "The Free plan is limited to 1 resume. Please upgrade to create more.",
+            description: "The Free plan is limited to 5 resumes. Please upgrade to create more.",
             variant: "destructive"
         });
         return null;
