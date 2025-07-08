@@ -48,14 +48,20 @@ export async function chatWithCounselor(
     content: [{text: msg.content}],
   }));
 
-  // Use the more robust startChat method for conversations
-  const chat = ai.startChat({
-    model: 'googleai/gemini-2.0-flash',
-    history: history,
-    system: systemPrompt,
-  });
+  // Add the new user message to the history to form the full prompt
+  const fullPrompt: MessageData[] = [
+    ...history,
+    { role: 'user', content: [{ text: input.newMessage }] }
+  ];
 
-  const response = await chat.send(input.newMessage);
+  // Use ai.generate for the conversation.
+  // The system prompt provides overall instructions.
+  // The prompt contains the full message history.
+  const response = await ai.generate({
+    model: 'googleai/gemini-2.0-flash',
+    system: systemPrompt,
+    prompt: fullPrompt,
+  });
 
   return {response: response.text};
 }
