@@ -48,19 +48,14 @@ export async function chatWithCounselor(
     content: [{text: msg.content}],
   }));
 
-  // Add the new user message to the history to form the full prompt
-  const fullPrompt: MessageData[] = [
-    ...history,
-    { role: 'user', content: [{ text: input.newMessage }] }
-  ];
-
   // Use ai.generate for the conversation.
   // The system prompt provides overall instructions.
-  // The prompt contains the full message history.
+  // The history contains the previous messages, and the prompt contains the new one.
   const response = await ai.generate({
     model: 'googleai/gemini-2.0-flash',
     system: systemPrompt,
-    prompt: fullPrompt,
+    history: history,
+    prompt: input.newMessage,
   });
 
   return {response: response.text};
