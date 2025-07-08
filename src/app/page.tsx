@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BotMessageSquare, GraduationCap, Briefcase, Users, Award, BookOpen, Target } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { BotMessageSquare, GraduationCap, Briefcase, Users, Award, BookOpen, Target, FileText, Linkedin, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import img from "../../public/images/Main_bg.png";
@@ -120,7 +120,7 @@ export default function StudentLandingPage() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-6xl items-start gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12">
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 lg:grid-cols-2 lg:gap-12">
               <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-0 shadow-md bg-white">
                 <CardHeader className="pb-4">
                   <div className="p-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 inline-block mb-4 w-fit">
@@ -128,15 +128,6 @@ export default function StudentLandingPage() {
                   </div>
                   <CardTitle className="font-headline text-gray-900">Academic Project Optimizer</CardTitle>
                   <CardDescription className="text-gray-600">Transform your coursework and projects into impressive professional experience.</CardDescription>
-                </CardHeader>
-              </Card>
-              <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-0 shadow-md bg-white">
-                <CardHeader className="pb-4">
-                  <div className="p-4 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 inline-block mb-4 w-fit">
-                    <Target className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="font-headline text-gray-900">Entry-Level Templates</CardTitle>
-                  <CardDescription className="text-gray-600">Professionally designed templates perfect for students and recent graduates.</CardDescription>
                 </CardHeader>
               </Card>
               <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-0 shadow-md bg-white">
@@ -164,15 +155,6 @@ export default function StudentLandingPage() {
                   </div>
                   <CardTitle className="font-headline text-gray-900">Achievement Amplifier</CardTitle>
                   <CardDescription className="text-gray-600">Showcase your awards, leadership roles, and extracurricular activities effectively.</CardDescription>
-                </CardHeader>
-              </Card>
-              <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-0 shadow-md bg-white">
-                <CardHeader className="pb-4">
-                  <div className="p-4 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 inline-block mb-4 w-fit">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="font-headline text-gray-900">Peer Review Network</CardTitle>
-                  <CardDescription className="text-gray-600">Get feedback from other students and career counselors to perfect your resume.</CardDescription>
                 </CardHeader>
               </Card>
             </div>
@@ -204,7 +186,7 @@ export default function StudentLandingPage() {
                 Student-Friendly Pricing
               </h2>
               <p className="mx-auto max-w-[600px] text-gray-600 md:text-xl/relaxed">
-                We believe every student deserves a great resume. That's why we offer everything you need for free.
+                We believe every student deserves a great resume. That's why we offer a generous free plan and a powerful pro plan.
               </p>
             </div>
             <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
@@ -237,19 +219,19 @@ export default function StudentLandingPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>Student Community Support</span>
+                      <span>ATS Compatibility Checker</span>
                     </li>
                   </ul>
                 </CardContent>
-                <CardContent>
-                  <Link href="/resumes" passHref>
+                <CardFooter>
+                  <Link href="/resumes" passHref className="w-full">
                     <Button className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all">
                       Get Started Free
                     </Button>
                   </Link>
-                </CardContent>
+                </CardFooter>
               </Card>
-              <Card className="flex flex-col border-2 border-blue-200 relative overflow-hidden">
+              <Card className="flex flex-col border-2 border-blue-500 relative overflow-hidden ring-2 ring-blue-500 shadow-2xl">
                 <div className="absolute top-0 right-0 bg-blue-500 text-white px-4 py-1 text-sm font-semibold">
                   CAREER BOOSTER
                 </div>
@@ -262,37 +244,37 @@ export default function StudentLandingPage() {
                   <ul className="space-y-3 text-blue-700">
                     <li className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Everything in Free</span>
+                      <span className="font-semibold">Everything in Free, plus:</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       <span>Unlimited Resumes</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Premium Templates</span>
+                      <FileText className="h-4 w-4 text-blue-600" />
+                      <span>AI Cover Letter Generator</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Cover Letter Generator</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <Linkedin className="h-4 w-4 text-blue-600" />
                       <span>LinkedIn Profile Optimizer</span>
                     </li>
+                     <li className="flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4 text-blue-600" />
+                      <span>AI Career Counselor Chat</span>
+                    </li>
                     <li className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Career Counselor Chat</span>
+                      <span>Premium Templates & Designs</span>
                     </li>
                   </ul>
                 </CardContent>
-                <CardContent>
-                  <Link href="/resumes" passHref>
+                <CardFooter>
+                  <Link href="/settings" passHref className="w-full">
                     <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all">
-                      Start Now
+                      Upgrade to Pro
                     </Button>
                   </Link>
-                </CardContent>
+                </CardFooter>
               </Card>
             </div>
           </div>

@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { Home, FilePlus, BotMessageSquare, Settings, LogOut, Menu, Loader, ScanSearch } from 'lucide-react';
+import { Home, FilePlus, BotMessageSquare, Settings, LogOut, Menu, Loader, ScanSearch, FileText, Linkedin, MessageCircle } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { Separator } from '../ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -28,6 +28,15 @@ const navItems = [
   { href: '/resumes', label: 'My Resumes', icon: Home },
   { href: '/resumes/editor/new', label: 'New Resume', icon: FilePlus },
   { href: '/ats-checker', label: 'ATS Checker', icon: ScanSearch },
+];
+
+const proNavItems = [
+    { href: '/cover-letter', label: 'Cover Letter AI', icon: FileText },
+    { href: '/linkedin-optimizer', label: 'LinkedIn Optimizer', icon: Linkedin },
+    { href: '/career-counselor', label: 'Career Counselor', icon: MessageCircle },
+];
+
+const bottomNavItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -35,8 +44,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isLoading, logout } = useAuth();
 
-  // This check is important because AppShell is only for authenticated routes.
-  // The global AuthProvider handles redirects, but this provides a loading fallback.
   if (isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -45,9 +52,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const renderNavItems = (isMobile = false) => (
-    <SidebarMenu>
-      {navItems.map((item) => (
+  const renderNavGroup = (items: typeof navItems, isMobile = false) => (
+      items.map((item) => (
         <SidebarMenuItem key={item.label}>
           <Link href={item.href} passHref legacyBehavior>
             <SidebarMenuButton
@@ -60,8 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenuButton>
           </Link>
         </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
+      ))
   );
 
   return (
@@ -74,8 +79,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="group-data-[collapsible=icon]:hidden">ResumAI</span>
             </Link>
           </SidebarHeader>
-          <SidebarContent className="p-2 flex-grow">
-            {renderNavItems()}
+          <SidebarContent className="p-2 flex-grow flex flex-col">
+            <SidebarMenu className="flex-grow">
+              {renderNavGroup(navItems)}
+              <Separator className="my-2" />
+              {renderNavGroup(proNavItems)}
+            </SidebarMenu>
+            <SidebarMenu className="mt-auto">
+                {renderNavGroup(bottomNavItems)}
+            </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-2 mt-auto">
              <Separator className="my-2 group-data-[collapsible=icon]:hidden"/>
@@ -114,7 +126,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </Link>
                   </SidebarHeader>
                   <SidebarContent className="p-4 flex-grow">
-                     {renderNavItems(true)}
+                     <SidebarMenu>
+                      {renderNavGroup(navItems, true)}
+                      <Separator className="my-2" />
+                      {renderNavGroup(proNavItems, true)}
+                      <Separator className="my-2" />
+                      {renderNavGroup(bottomNavItems, true)}
+                     </SidebarMenu>
                   </SidebarContent>
                    <SidebarFooter className="p-4 border-t mt-auto">
                       <div className="flex items-center gap-3 mb-4">
