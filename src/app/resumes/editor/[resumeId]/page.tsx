@@ -784,7 +784,6 @@ export default function ResumeEditorPage() {
     const resumeContentElement = document.getElementById('resume-preview-content');
     if (resumeContentElement && activeResume) {
         
-        // Find the parent Card element to manipulate its shadow
         const cardElement = resumeContentElement.closest('.bg-card');
 
         const originalStyles = {
@@ -823,20 +822,21 @@ export default function ResumeEditorPage() {
                 const canvasHeight = canvas.height;
                 const ratio = canvasHeight / canvasWidth;
 
-                const imgWidthOnPdf = pdfWidth - 72; // 0.5 inch margins
+                const pageMargin = 20; // points, approx 0.28 inches
+                const imgWidthOnPdf = pdfWidth - (pageMargin * 2);
                 const imgHeightOnPdf = imgWidthOnPdf * ratio;
 
                 let heightLeft = imgHeightOnPdf;
-                let position = 36; // 0.5 inch top margin
+                let position = pageMargin;
 
-                pdf.addImage(imgData, 'PNG', 36, position, imgWidthOnPdf, imgHeightOnPdf);
-                heightLeft -= (pdfHeight - 72);
+                pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidthOnPdf, imgHeightOnPdf);
+                heightLeft -= (pdfHeight - (pageMargin * 2));
 
                 while (heightLeft > 0) {
-                    position = position - (pdfHeight - 72);
+                    position = position - (pdfHeight - (pageMargin * 2));
                     pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 36, position, imgWidthOnPdf, imgHeightOnPdf);
-                    heightLeft -= (pdfHeight - 72);
+                    pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidthOnPdf, imgHeightOnPdf);
+                    heightLeft -= (pdfHeight - (pageMargin * 2));
                 }
                 
                 pdf.save(`${activeResume.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);

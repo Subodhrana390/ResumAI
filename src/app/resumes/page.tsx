@@ -110,20 +110,21 @@ export default function ResumesDashboardPage() {
                 const canvasHeight = canvas.height;
                 const ratio = canvasHeight / canvasWidth;
 
-                const imgWidthOnPdf = pdfWidth - 72;
+                const pageMargin = 20; // points, approx 0.28 inches
+                const imgWidthOnPdf = pdfWidth - (pageMargin * 2);
                 const imgHeightOnPdf = imgWidthOnPdf * ratio;
 
                 let heightLeft = imgHeightOnPdf;
-                let position = 36;
+                let position = pageMargin;
 
-                pdf.addImage(imgData, 'PNG', 36, position, imgWidthOnPdf, imgHeightOnPdf);
-                heightLeft -= (pdfHeight - 72);
+                pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidthOnPdf, imgHeightOnPdf);
+                heightLeft -= (pdfHeight - (pageMargin * 2));
 
                 while (heightLeft > 0) {
-                    position = position - (pdfHeight - 72);
+                    position = position - (pdfHeight - (pageMargin * 2));
                     pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 36, position, imgWidthOnPdf, imgHeightOnPdf);
-                    heightLeft -= (pdfHeight - 72);
+                    pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidthOnPdf, imgHeightOnPdf);
+                    heightLeft -= (pdfHeight - (pageMargin * 2));
                 }
                 
                 pdf.save(`${resumeToDownload.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
@@ -175,7 +176,7 @@ export default function ResumesDashboardPage() {
     );
   }
 
-  const canCreateResume = user?.subscription.plan === 'pro' || resumes.length < 1;
+  const canCreateResume = user?.subscription.plan === 'pro' || resumes.length < 5;
 
   return (
     <AppShell>
@@ -185,6 +186,12 @@ export default function ResumesDashboardPage() {
           <FilePlus className="mr-2 h-5 w-5" /> Create New Resume
         </Button>
       </div>
+
+      {!canCreateResume && (
+        <div className="mb-4 p-4 text-sm text-amber-800 bg-amber-100 border border-amber-200 rounded-md">
+            You've reached your limit of 5 resumes on the free plan. Please <Link href="/settings" className="font-semibold underline hover:text-amber-900">upgrade to Pro</Link> to create more.
+        </div>
+      )}
 
       {resumes.length === 0 ? (
         <Card className="text-center py-12 col-span-full shadow-none border-dashed">
