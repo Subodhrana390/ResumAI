@@ -897,7 +897,7 @@ export default function ResumeEditorPage() {
       event.target.value = '';
     }
   };
-  
+
   if (isLoading) {
     return (
       <AppShell>

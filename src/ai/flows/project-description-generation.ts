@@ -48,7 +48,7 @@ Given the following project details:
 Project Name: {{{projectName}}}
 Technologies Used: {{#each technologies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
 
-{{#if existingDescriptions.length}}
+{{#if existingDescriptions}}
 Current bullet points (for context, refinement, or to add to):
 {{#each existingDescriptions}}
 - {{{this}}}

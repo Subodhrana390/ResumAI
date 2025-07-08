@@ -52,7 +52,7 @@ const prompt = ai.definePrompt({
 Given the following details:
 Job Title: {{{jobTitle}}}
 Company: {{{company}}}
-{{#if existingResponsibilities.length}}
+{{#if existingResponsibilities}}
 Current bullet points (for context, refinement, or to add to):
 {{#each existingResponsibilities}}
 - {{{this}}}

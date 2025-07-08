@@ -1,5 +1,5 @@
-// 'use server';
 
+'use server';
 /**
  * @fileOverview Provides suggestions on how to improve the language and impact of the content in a resume, with a focus on ATS compatibility.
  *
@@ -7,8 +7,6 @@
  * - ResumeImprovementSuggestionsInput - The input type for the getResumeImprovementSuggestions function.
  * - ResumeImprovementSuggestionsOutput - The return type for the getResumeImprovementSuggestions function.
  */
-
-'use server';
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';

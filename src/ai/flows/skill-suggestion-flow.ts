@@ -50,7 +50,7 @@ If a 'jobDescription' is provided, extract relevant keywords and include them as
 
 Job Title: {{{jobTitle}}}
 
-{{#if existingSkills.length}}
+{{#if existingSkills}}
 Existing Skills (do not suggest these):
 {{#each existingSkills}}
 - {{{this}}}
