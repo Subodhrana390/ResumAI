@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
-export const OptimizeLinkedInProfileInputSchema = z.object({
+const OptimizeLinkedInProfileInputSchema = z.object({
   currentSummary: z
     .string()
     .describe("The user's current LinkedIn 'About' section or summary."),
@@ -23,7 +23,7 @@ export type OptimizeLinkedInProfileInput = z.infer<
   typeof OptimizeLinkedInProfileInputSchema
 >;
 
-export const OptimizeLinkedInProfileOutputSchema = z.object({
+const OptimizeLinkedInProfileOutputSchema = z.object({
   optimizedHeadline: z
     .string()
     .describe(

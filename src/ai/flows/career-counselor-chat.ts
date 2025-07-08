@@ -12,13 +12,13 @@ import {ai} from '@/ai/genkit';
 import {type MessageData} from '@genkit-ai/ai';
 import {z} from 'zod';
 
-export const ChatMessageSchema = z.object({
+const ChatMessageSchema = z.object({
   role: z.enum(['user', 'model']),
   content: z.string(),
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
-export const ChatWithCounselorInputSchema = z.object({
+const ChatWithCounselorInputSchema = z.object({
   history: z
     .array(ChatMessageSchema)
     .describe('The history of the conversation so far.'),
@@ -28,7 +28,7 @@ export type ChatWithCounselorInput = z.infer<
   typeof ChatWithCounselorInputSchema
 >;
 
-export const ChatWithCounselorOutputSchema = z.object({
+const ChatWithCounselorOutputSchema = z.object({
   response: z
     .string()
     .describe("The AI counselor's response to the user's message."),
@@ -48,6 +48,9 @@ export async function chatWithCounselor(
     content: [{text: msg.content}],
   }));
 
+  // Use ai.generate for the conversation.
+  // The system prompt provides overall instructions.
+  // The history contains the previous messages, and the prompt contains the new one.
   const response = await ai.generate({
     model: 'googleai/gemini-2.0-flash',
     system: systemPrompt,
