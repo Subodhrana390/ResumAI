@@ -11,11 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus, LanguagesIcon, ListPlus, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { Save, Sparkles, Eye, Download, Share2, Settings2, FileText, Palette, CheckSquare, Info, Trash2, FilePlus, LanguagesIcon, ListPlus, GripVertical, ArrowUp, ArrowDown, BookCopy } from 'lucide-react';
 import { generateCareerSummary, type CareerSummaryInput } from '@/ai/flows/career-summary-generation';
 import { getResumeImprovementSuggestions, type ResumeImprovementSuggestionsInput, type ResumeImprovementSuggestionsOutput } from '@/ai/flows/resume-improvement-suggestions';
 import { generateExperienceBulletPoints, type GenerateExperienceBulletPointsInput } from '@/ai/flows/experience-bullet-point-generation';
 import { suggestSkills, type SuggestSkillsInput } from '@/ai/flows/skill-suggestion-flow';
+import { generateProjectDescriptions, type GenerateProjectDescriptionsInput } from '@/ai/flows/project-description-generation';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
@@ -165,6 +166,124 @@ const ExperienceForm = ({ resume, updateField, toast }: { resume: any, updateFie
   );
 };
 
+const ProjectsForm = ({ resume, updateField, toast }: { resume: any, updateField: (field: string, value: any) => void, toast: any }) => {
+  const [loadingAIForProjectId, setLoadingAIForProjectId] = useState<string | null>(null);
+
+  const addProject = () => {
+    const newProj: ResumeProject = { id: uuidv4(), name: '', description: '', technologies: [], link: '', startDate: '', endDate: '' };
+    updateField('projects', [...resume.projects, newProj]);
+  };
+  const updateProject = (index: number, field: keyof ResumeProject, value: any) => {
+    const updatedProj = resume.projects.map((proj: ResumeProject, i: number) => i === index ? { ...proj, [field]: value } : proj);
+    updateField('projects', updatedProj);
+  };
+  const removeProject = (index: number) => {
+    updateField('projects', resume.projects.filter((_:any, i:number) => i !== index));
+  };
+
+  // For handling technologies as tags
+  const addTechnology = (projIndex: number, tech: string) => {
+    if (tech.trim() === '') return;
+    const project = resume.projects[projIndex];
+    if (project.technologies.includes(tech.trim())) return;
+    const updatedTechnologies = [...project.technologies, tech.trim()];
+    updateProject(projIndex, 'technologies', updatedTechnologies);
+  };
+
+  const removeTechnology = (projIndex: number, techToRemove: string) => {
+    const project = resume.projects[projIndex];
+    const updatedTechnologies = project.technologies.filter((t: string) => t !== techToRemove);
+    updateProject(projIndex, 'technologies', updatedTechnologies);
+  };
+  
+   const handleGenerateAIDescriptions = async (projIndex: number) => {
+    const currentProject = resume.projects[projIndex];
+    if (!currentProject.name || currentProject.technologies.length === 0) {
+        toast({ title: "Missing Information", description: "Please provide a Project Name and at least one Technology before generating descriptions.", variant: "destructive" });
+        return;
+    }
+    setLoadingAIForProjectId(currentProject.id);
+    try {
+      const existingDescriptions = currentProject.description.split('\n').filter(d => d.trim() !== '');
+      const input: GenerateProjectDescriptionsInput = {
+        projectName: currentProject.name,
+        technologies: currentProject.technologies,
+        existingDescriptions: existingDescriptions,
+      };
+      const result = await generateProjectDescriptions(input);
+      if (result.generatedDescriptions) {
+        updateProject(projIndex, 'description', result.generatedDescriptions.join('\n'));
+        toast({ title: "AI Descriptions Generated!", description: "Project description has been updated." });
+      }
+    } catch (error) {
+      console.error("AI Project Description generation failed:", error);
+      toast({ title: "Error", description: "Failed to generate AI project descriptions.", variant: "destructive" });
+    } finally {
+      setLoadingAIForProjectId(null);
+    }
+  };
+
+
+  return (
+  <Card>
+    <CardHeader><CardTitle className="flex items-center gap-2"><BookCopy className="w-5 h-5 text-primary" />Projects</CardTitle></CardHeader>
+    <CardContent className="space-y-4">
+      {resume.projects.map((proj: ResumeProject, index: number) => (
+        <Card key={proj.id} className="p-4 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><Label>Project Name</Label><Input value={proj.name} onChange={e => updateProject(index, 'name', e.target.value)} placeholder="AI Resume Builder" /></div>
+            <div><Label>Project Link (Optional)</Label><Input value={proj.link || ''} onChange={e => updateProject(index, 'link', e.target.value)} placeholder="https://github.com/user/repo" /></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><Label>Start Date</Label><Input type="month" value={proj.startDate || ''} onChange={e => updateProject(index, 'startDate', e.target.value)} /></div>
+            <div><Label>End Date</Label><Input type="month" value={proj.endDate || ''} onChange={e => updateProject(index, 'endDate', e.target.value)} /></div>
+          </div>
+          <div>
+            <Label>Technologies Used</Label>
+            <div className="flex items-center gap-2 mt-1">
+                <Input 
+                    placeholder="e.g., React, TypeScript" 
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            addTechnology(index, e.currentTarget.value);
+                            e.currentTarget.value = '';
+                        }
+                    }}
+                />
+            </div>
+             <div className="flex flex-wrap gap-2 mt-2">
+              {proj.technologies.map((tech) => (
+                <div key={tech} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-2 text-sm">
+                  {tech}
+                  <button onClick={() => removeTechnology(index, tech)} className="text-destructive hover:text-destructive/80">&times;</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+                <Label>Description / Bullet Points</Label>
+                <Button variant="outline" size="sm" onClick={() => handleGenerateAIDescriptions(index)} disabled={loadingAIForProjectId === proj.id}>
+                    <Sparkles className="mr-2 h-4 w-4" /> {loadingAIForProjectId === proj.id ? 'Generating...' : 'AI Optimize'}
+                </Button>
+            </div>
+            <Textarea 
+                value={proj.description} 
+                onChange={e => updateProject(index, 'description', e.target.value)} 
+                placeholder="- Developed a web app using React...&#10;- Implemented user authentication...&#10;- Deployed to Vercel." 
+                rows={4}
+            />
+          </div>
+          <Button variant="destructive" size="sm" onClick={() => removeProject(index)}>Remove Project</Button>
+        </Card>
+      ))}
+      <Button onClick={addProject}>Add Project</Button>
+    </CardContent>
+  </Card>
+  );
+};
+
 const EducationForm = ({ resume, updateField }: { resume: any, updateField: (field: string, value: any) => void }) => {
    const addEducation = () => {
     const newEdu: ResumeEducation = { id: uuidv4(), institution: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '', gpa: '' };
@@ -190,7 +309,7 @@ const EducationForm = ({ resume, updateField }: { resume: any, updateField: (fie
           </div>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Field of Study</Label><Input value={edu.fieldOfStudy} onChange={e => updateEducation(index, 'fieldOfStudy', e.target.value)} placeholder="Computer Science" /></div>
-            <div><Label>GPA (Optional)</Label><Input value={edu.gpa} onChange={e => updateEducation(index, 'gpa', e.target.value)} placeholder="3.8/4.0" /></div>
+            <div><Label>GPA (Optional)</Label><Input value={edu.gpa || ''} onChange={e => updateEducation(index, 'gpa', e.target.value)} placeholder="3.8/4.0" /></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Start Date</Label><Input type="month" value={edu.startDate} onChange={e => updateEducation(index, 'startDate', e.target.value)} /></div>
@@ -591,6 +710,16 @@ export default function ResumeEditorPage() {
         });
       }
 
+       if (activeResume.projects.length > 0) {
+        resumeFullContent += `\nProjects:\n`;
+        activeResume.projects.forEach(proj => {
+            resumeFullContent += `- ${proj.name}\n`;
+            proj.description.split('\n').forEach(desc => {
+                resumeFullContent += `  - ${desc}\n`;
+            });
+        });
+      }
+
       if (activeResume.education.length > 0) {
         resumeFullContent += `\nEducation:\n`;
         activeResume.education.forEach(edu => {
@@ -782,6 +911,7 @@ export default function ResumeEditorPage() {
                   <ContactForm resume={activeResume} updateField={handleUpdateField} />
                   <SummaryForm resume={activeResume} updateField={handleUpdateField} generateAISummary={handleGenerateAISummary} isLoadingAISummary={isLoadingAISummary} />
                   <ExperienceForm resume={activeResume} updateField={handleUpdateField} toast={toast} />
+                  <ProjectsForm resume={activeResume} updateField={handleUpdateField} toast={toast} />
                   <EducationForm resume={activeResume} updateField={handleUpdateField} />
                   <SkillsForm resume={activeResume} updateField={handleUpdateField} toast={toast} jobDescriptionForAISkills={jobDescription} />
                   <LanguagesForm resume={activeResume} updateField={handleUpdateField} />

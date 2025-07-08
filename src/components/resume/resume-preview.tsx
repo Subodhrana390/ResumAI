@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { ResumeData, ResumeExperience, ResumeEducation, ResumeSkill, ResumeLanguage, ResumeCustomSection, ResumeCustomSectionItem } from '@/types/resume';
+import type { ResumeData, ResumeExperience, ResumeEducation, ResumeSkill, ResumeLanguage, ResumeCustomSection, ResumeCustomSectionItem, ResumeProject } from '@/types/resume';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const ensureProtocol = (url: string) => {
@@ -100,6 +100,26 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                                         <div className="main-item-content">
                                             <ul>
                                                 {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {resumeData.projects?.length > 0 && (
+                            <div className="main-section">
+                                <h2 className="main-section-title">Projects</h2>
+                                {resumeData.projects.map((proj: ResumeProject) => (
+                                    <div key={proj.id} className="main-item">
+                                        <h3 className="main-item-title">{proj.name}</h3>
+                                        <p className="main-item-subtitle">
+                                            {proj.technologies.join(' | ')}
+                                            {proj.link && <> | <a href={ensureProtocol(proj.link)} target="_blank" rel="noreferrer" className="hover:underline">View Project</a></>}
+                                        </p>
+                                        <div className="main-item-content">
+                                            <ul>
+                                                {proj.description.split('\n').map((desc, i) => desc.trim() && <li key={i}>{desc.trim().replace(/^- /, '')}</li>)}
                                             </ul>
                                         </div>
                                     </div>
@@ -251,6 +271,29 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                         </div>
                         )}
                         
+                        {resumeData.projects?.length > 0 && (
+                            <div className="right-column-section">
+                                <h2 className="right-column-section-title">Projects</h2>
+                                {resumeData.projects.map((proj: ResumeProject) => (
+                                <div key={proj.id} className="resume-item">
+                                    <div className="resume-item-header">
+                                    <div className="resume-item-title-group">
+                                        <h3 className="resume-item-title">{proj.name}</h3>
+                                        <p className="resume-item-subtitle">{proj.technologies.join(', ')}</p>
+                                    </div>
+                                    <p className="resume-item-dates">{proj.startDate} - {proj.endDate}</p>
+                                    </div>
+                                    <div className="resume-item-content">
+                                        <ul>
+                                            {proj.description.split('\n').map((desc, i) => desc.trim() && <li key={i}>{desc.trim().replace(/^- /, '')}</li>)}
+                                        </ul>
+                                        {proj.link && <p className="mt-1 text-xs"><a href={ensureProtocol(proj.link)} target="_blank" rel="noreferrer" className="hover:underline">Project Link</a></p>}
+                                    </div>
+                                </div>
+                                ))}
+                            </div>
+                        )}
+
                         {resumeData.education?.length > 0 && (
                         <div className="right-column-section">
                             <h2 className="right-column-section-title">Education</h2>
@@ -340,6 +383,33 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                     {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
                   </ul>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {resumeData.projects?.length > 0 && (
+          <div className="resume-section">
+            <h2 className="resume-section-title">Projects</h2>
+            {resumeData.projects.map((proj: ResumeProject) => (
+              <div key={proj.id} className="resume-item">
+                <h3 className="resume-item-title">{proj.name}</h3>
+                <p className="resume-item-subtitle">
+                    {proj.startDate && proj.endDate ? `${proj.startDate} - ${proj.endDate}` : (proj.startDate || proj.endDate)}
+                    {proj.link && <> | <a href={ensureProtocol(proj.link)} target="_blank" rel="noreferrer" className="hover:underline">{proj.link}</a></>}
+                </p>
+                <div className="resume-item-content">
+                  <ul>
+                    {proj.description.split('\n').map((desc, i) => desc.trim() && <li key={i}>{desc.trim().replace(/^- /, '')}</li>)}
+                  </ul>
+                </div>
+                {proj.technologies?.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {proj.technologies.map((tech) => (
+                            <span key={tech} className="resume-skill-badge">{tech}</span>
+                        ))}
+                    </div>
+                )}
               </div>
             ))}
           </div>
