@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { ResumeData, ResumeExperience, ResumeEducation, ResumeSkill, ResumeLanguage, ResumeCustomSection, ResumeCustomSectionItem, ResumeProject } from '@/types/resume';
+import type { ResumeData, ResumeExperience, ResumeEducation, ResumeSkill, ResumeLanguage, ResumeCustomSection, ResumeCustomSectionItem, ResumeProject, ResumeResponsibility } from '@/types/resume';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const ensureProtocol = (url: string) => {
@@ -99,7 +99,7 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                                         <p className="main-item-subtitle">{exp.company} | {exp.location} | {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate}</p>
                                         <div className="main-item-content">
                                             <ul>
-                                                {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
+                                                {exp.responsibilities.map((resp: ResumeResponsibility) => <li key={resp.id}>{resp.text}</li>)}
                                             </ul>
                                         </div>
                                     </div>
@@ -263,7 +263,7 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                                 </div>
                                 <div className="resume-item-content">
                                 <ul>
-                                    {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
+                                    {exp.responsibilities.map((resp: ResumeResponsibility) => <li key={resp.id}>{resp.text}</li>)}
                                 </ul>
                                 </div>
                             </div>
@@ -380,7 +380,7 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                 <p className="resume-item-subtitle">{exp.location} | {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate}</p>
                 <div className="resume-item-content">
                   <ul>
-                    {exp.responsibilities.map((resp, i) => <li key={i}>{resp}</li>)}
+                    {exp.responsibilities.map((resp: ResumeResponsibility) => <li key={resp.id}>{resp.text}</li>)}
                   </ul>
                 </div>
               </div>

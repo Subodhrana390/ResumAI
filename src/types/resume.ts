@@ -10,6 +10,11 @@ export interface ResumeContact {
   photoUrl?: string;
 }
 
+export interface ResumeResponsibility {
+  id: string;
+  text: string;
+}
+
 export interface ResumeExperience {
   id: string;
   jobTitle: string;
@@ -18,7 +23,7 @@ export interface ResumeExperience {
   startDate: string;
   endDate: string;
   isCurrent: boolean;
-  responsibilities: string[];
+  responsibilities: ResumeResponsibility[];
 }
 
 export interface ResumeEducation {

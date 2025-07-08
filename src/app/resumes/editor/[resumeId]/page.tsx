@@ -92,7 +92,7 @@ export default function ResumeEditorPage() {
         activeResume.experience.forEach(exp => {
           resumeFullContent += `- ${exp.jobTitle} at ${exp.company} (${exp.startDate} - ${exp.isCurrent ? 'Present' : exp.endDate})\n`;
           exp.responsibilities.forEach(resp => {
-            resumeFullContent += `  - ${resp}\n`;
+            resumeFullContent += `  - ${resp.text}\n`;
           });
         });
       }

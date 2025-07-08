@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import type {
     ResumeContact, ResumeEducation, ResumeExperience, ResumeProject,
-    ResumeSkill, ResumeLanguage, ResumeCustomSection, ResumeCustomSectionItem, ResumeData
+    ResumeSkill, ResumeLanguage, ResumeCustomSection, ResumeCustomSectionItem, ResumeData, ResumeResponsibility
 } from '@/types/resume';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,7 +94,7 @@ export const SummaryForm = ({ resume, updateField }: FormProps) => {
                 experienceLevel: 'student', 
                 jobTitle: resume.experience[0]?.jobTitle || 'Entry-level role',
                 skills: resume.skills.map(s => s.name).join(', '),
-                experienceSummary: resume.experience.map(e => `${e.jobTitle} at ${e.company}: ${e.responsibilities.join('. ')}`).join('\n'),
+                experienceSummary: resume.experience.map(e => `${e.jobTitle} at ${e.company}: ${e.responsibilities.map(r => r.text).join('. ')}`).join('\n'),
             };
             const result = await generateCareerSummary(input);
             if (result.summary) {
@@ -131,7 +131,7 @@ export const ExperienceForm = ({ resume, updateField }: FormProps) => {
   const { toast } = useToast();
 
   const addExperience = () => {
-    const newExp: ResumeExperience = { id: uuidv4(), jobTitle: '', company: '', location: '', startDate: '', endDate: '', isCurrent: false, responsibilities: [''] };
+    const newExp: ResumeExperience = { id: uuidv4(), jobTitle: '', company: '', location: '', startDate: '', endDate: '', isCurrent: false, responsibilities: [{ id: uuidv4(), text: '' }] };
     updateField('experience', [...resume.experience, newExp]);
   };
   const updateExperience = (index: number, field: keyof ResumeExperience, value: any) => {
@@ -142,11 +142,16 @@ export const ExperienceForm = ({ resume, updateField }: FormProps) => {
     updateField('experience', resume.experience.filter((_:any, i:number) => i !== index));
   };
   const addResponsibility = (expIndex: number) => {
-    const updatedExp = resume.experience.map((exp: ResumeExperience, i: number) => i === expIndex ? { ...exp, responsibilities: [...exp.responsibilities, ''] } : exp);
+    const newResp: ResumeResponsibility = { id: uuidv4(), text: '' };
+    const updatedExp = resume.experience.map((exp: ResumeExperience, i: number) => i === expIndex ? { ...exp, responsibilities: [...exp.responsibilities, newResp] } : exp);
     updateField('experience', updatedExp);
   };
   const updateResponsibility = (expIndex: number, respIndex: number, value: string) => {
-    const updatedExp = resume.experience.map((exp: ResumeExperience, i: number) => i === expIndex ? { ...exp, responsibilities: exp.responsibilities.map((resp, ri) => ri === respIndex ? value : resp) } : exp);
+    const updatedExp = resume.experience.map((exp: ResumeExperience, i: number) => 
+        i === expIndex 
+        ? { ...exp, responsibilities: exp.responsibilities.map((resp, ri) => ri === respIndex ? { ...resp, text: value } : resp) } 
+        : exp
+    );
     updateField('experience', updatedExp);
   };
   const removeResponsibility = (expIndex: number, respIndex: number) => {
@@ -165,11 +170,12 @@ export const ExperienceForm = ({ resume, updateField }: FormProps) => {
       const input: GenerateExperienceBulletPointsInput = {
         jobTitle: currentExperience.jobTitle,
         company: currentExperience.company,
-        existingResponsibilities: currentExperience.responsibilities.filter(r => r.trim() !== ''),
+        existingResponsibilities: currentExperience.responsibilities.filter(r => r.text.trim() !== '').map(r => r.text),
       };
       const result = await generateExperienceBulletPoints(input);
       if (result.generatedBulletPoints) {
-        updateExperience(expIndex, 'responsibilities', result.generatedBulletPoints);
+        const newResponsibilities = result.generatedBulletPoints.map(text => ({ id: uuidv4(), text }));
+        updateExperience(expIndex, 'responsibilities', newResponsibilities);
         toast({ title: "AI Bullet Points Generated!", description: "Responsibilities have been updated." });
       }
     } catch (error) {
@@ -203,8 +209,7 @@ export const ExperienceForm = ({ resume, updateField }: FormProps) => {
                   id={`current-${exp.id}`}
                   checked={exp.isCurrent}
                   onCheckedChange={(checked) => {
-                    const isChecked = checked === true;
-                    updateExperience(index, 'isCurrent', isChecked);
+                    updateExperience(index, 'isCurrent', !!checked);
                   }}
                 />
                 <Label
@@ -224,8 +229,8 @@ export const ExperienceForm = ({ resume, updateField }: FormProps) => {
                 </Button>
             </div>
             {exp.responsibilities.map((resp, respIndex) => (
-              <div key={respIndex} className="flex items-center gap-2 mt-1">
-                <Textarea value={resp} onChange={e => updateResponsibility(index, respIndex, e.target.value)} placeholder="Developed new features..." rows={2}/>
+              <div key={resp.id} className="flex items-center gap-2 mt-1">
+                <Textarea value={resp.text} onChange={e => updateResponsibility(index, respIndex, e.target.value)} placeholder="Developed new features..." rows={2}/>
                 <Button variant="ghost" size="icon" onClick={() => removeResponsibility(index, respIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </div>
             ))}
