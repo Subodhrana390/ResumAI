@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {generate, type MessageData} from 'genkit';
+import {type MessageData} from 'genkit';
 import {z} from 'genkit';
 
 export const ChatMessageSchema = z.object({
@@ -48,7 +48,7 @@ export async function chatWithCounselor(
     content: [{text: msg.content}],
   }));
 
-  const response = await generate({
+  const response = await ai.generate({
     model: ai.model,
     system: systemPrompt,
     history: history,
