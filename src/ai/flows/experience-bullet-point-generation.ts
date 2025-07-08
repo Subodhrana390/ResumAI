@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Generates impactful bullet points for work experience sections of a resume.

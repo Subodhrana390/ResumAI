@@ -1,4 +1,3 @@
-// use server'
 'use server';
 /**
  * @fileOverview An AI-powered resume generation flow for fresher.
