@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {generate, MessageData} from 'genkit/ai';
+import {generate, type MessageData} from 'genkit';
 import {z} from 'genkit';
 
 export const ChatMessageSchema = z.object({
