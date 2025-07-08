@@ -48,12 +48,14 @@ export async function chatWithCounselor(
     content: [{text: msg.content}],
   }));
 
-  const response = await ai.generate({
+  // Use the more robust startChat method for conversations
+  const chat = ai.startChat({
     model: 'googleai/gemini-2.0-flash',
-    system: systemPrompt,
     history: history,
-    prompt: input.newMessage,
+    system: systemPrompt,
   });
+
+  const response = await chat.send(input.newMessage);
 
   return {response: response.text};
 }
