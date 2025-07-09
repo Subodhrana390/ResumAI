@@ -1,9 +1,8 @@
-
 "use client";
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, type User as FirebaseUser, deleteUser } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, deleteUser } from 'firebase/auth';
 import { auth, firebaseConfigured, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { Loader } from 'lucide-react';
@@ -242,7 +241,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const deleteUserAccount = async () => {
-    if (!user || !auth.currentUser || !db) {
+    if (!user || !auth || !auth.currentUser || !db) {
         toast({ title: "Error", description: "You must be logged in to delete your account.", variant: "destructive" });
         return;
     }
