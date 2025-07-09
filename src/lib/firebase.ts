@@ -16,13 +16,14 @@ let auth: Auth | null = null;
 let db: Firestore | null = null;
 
 // Check if all required keys are present and not empty
-export const firebaseConfigured =
+export const firebaseConfigured = !!(
   firebaseConfig.apiKey &&
   firebaseConfig.authDomain &&
   firebaseConfig.projectId &&
   firebaseConfig.storageBucket &&
   firebaseConfig.messagingSenderId &&
-  firebaseConfig.appId;
+  firebaseConfig.appId
+);
 
 if (firebaseConfigured) {
   try {
