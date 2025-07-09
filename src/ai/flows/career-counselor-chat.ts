@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {type MessageData} from '@genkit-ai/ai';
+import {type MessageData, type GenerateOptions} from '@genkit-ai/ai';
 import {z} from 'zod';
 
 const ChatMessageSchema = z.object({
@@ -51,12 +51,14 @@ export async function chatWithCounselor(
   // Use ai.generate for the conversation.
   // The system prompt provides overall instructions.
   // The history contains the previous messages, and the prompt contains the new one.
-  const response = await ai.generate({
+  const options: GenerateOptions = {
     model: 'googleai/gemini-2.0-flash',
     system: systemPrompt,
     history: history,
     prompt: input.newMessage,
-  });
+  };
+  
+  const response = await ai.generate(options);
 
   return {response: response.text};
 }
