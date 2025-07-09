@@ -12,3 +12,4 @@ import '@/ai/flows/project-description-generation.ts';
 import '@/ai/flows/cover-letter-generation.ts';
 import '@/ai/flows/linkedin-optimization.ts';
 import '@/ai/flows/career-counselor-chat.ts';
+import '@/ai/flows/automated-resume-review.ts';
