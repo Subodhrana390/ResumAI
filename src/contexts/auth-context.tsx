@@ -46,14 +46,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!auth || !db) {
+    if (!auth) {
         setUser(null);
         setIsLoading(false);
         return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User is signed in. Fetch or create their profile in Firestore.
+        // User is signed in. We must ensure `db` is available before proceeding.
+        if (!db) {
+            console.error("Firestore (db) is not configured. Cannot fetch or create user profile.");
+            toast({ title: "Database Error", description: "Failed to connect to the database to load your profile.", variant: "destructive" });
+            setUser(null);
+            setIsLoading(false);
+            return;
+        }
+
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userDocRef);
 
@@ -85,7 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const login = async () => {
     if (!auth) {
@@ -152,6 +160,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       handler: async function (response: any) {
         // In a real app, you would send `response.razorpay_payment_id` to your backend for verification.
         // For this demo, we will assume payment is successful and upgrade the user.
+        if (!db) return; // Re-check db for safety inside async handler
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const newSubscription = {
