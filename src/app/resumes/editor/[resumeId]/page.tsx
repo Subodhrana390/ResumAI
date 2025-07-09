@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -205,7 +206,7 @@ export default function ResumeEditorPage() {
       "resume-preview-content"
     );
     if (resumeContentElement && activeResume) {
-      const cardElement = resumeContentElement.closest(".bg-card");
+      const cardElement = resumeContentElement.closest<HTMLElement>(".bg-card");
 
       const originalStyles = {
         width: resumeContentElement.style.width,
