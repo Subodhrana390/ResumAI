@@ -2,8 +2,7 @@
 
 ResumAI is a modern, full-stack web application designed to help students and job seekers create professional, ATS-friendly resumes with the power of AI. It features a rich, interactive editor, multiple templates, and a suite of AI tools to optimize every section of a resume.
 
-![App Screenshot](https://placehold.co/800x400.png?text=ResumAI+Screenshot)
-*A placeholder for the app's screenshot.*
+![App Screenshot](./public/images/Main_bg.png)
 
 ## Key Features
 
@@ -78,14 +77,14 @@ Follow these instructions to get a local copy up and running for development.
 
     # Cloudinary Configuration (for image uploads)
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
-    CLOUDINARY_API_KEY=
-    CLOUDINARY_API_SECRET=
+    NEXT_PUBLIC_CLOUDINARY_API_KEY=
+    NEXT_PUBLIC_CLOUDINARY_API_SECRET=
 
     # Razorpay Configuration (for Pro plan subscriptions)
     NEXT_PUBLIC_RAZORPAY_KEY_ID=
 
     # Google AI / Genkit (if specific key is needed beyond default auth)
-    # GOOGLE_API_KEY=
+    # GEMINI_API_KEY=
     ```
 
 4.  **Run the development servers:**
