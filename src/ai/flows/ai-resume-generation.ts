@@ -48,9 +48,9 @@ const GenerateAiResumeOutputSchema = z.object({
   contact: z.object({
     name: z.string(),
     email: z.string(),
-    phone: z.string().optional(),
-    linkedin: z.string().optional(),
-    address: z.string().optional(),
+    phone: z.string().optional().default(''),
+    linkedin: z.string().optional().default(''),
+    address: z.string().optional().default(''),
   }),
   summary: z.string().describe("A professional summary for the resume, tailored to the job description."),
   experience: z.array(GeneratedExperienceSchema).describe("A list of 1-2 relevant, impactful work experiences. If the user is a student with no experience, create plausible internship or project-based experiences."),
@@ -85,7 +85,7 @@ Your task is to generate a complete, structured resume for a user based on the i
 **Instructions:**
 1.  **Analyze the Job Description**: Carefully read the job description to understand the key requirements, skills, and qualifications.
 2.  **Generate a Full Resume**: Create a complete resume in the required JSON format.
-3.  **Contact Info**: Use the provided full name and email. You can generate a plausible phone number, address, and LinkedIn profile URL if not provided.
+3.  **Contact Info**: Use the provided full name and email. You can generate a plausible phone number, address, and LinkedIn profile URL if not provided. Always return a string, even if it's empty.
 4.  **Summary**: Write a powerful, concise professional summary that immediately highlights the candidate's suitability for the role described.
 5.  **Experience**:
     - Based on the job description, create 1 or 2 highly relevant and impactful work experience entries.
@@ -107,6 +107,13 @@ const generateAiResumeFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('AI failed to generate a resume.');
+    }
+    // Ensure optional fields are not undefined.
+    output.contact.phone = output.contact.phone || '';
+    output.contact.address = output.contact.address || '';
+    output.contact.linkedin = output.contact.linkedin || '';
+    return output;
   }
 );

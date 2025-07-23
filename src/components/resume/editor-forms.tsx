@@ -167,16 +167,21 @@ export const ExperienceForm = ({ resume, updateField }: FormProps) => {
     }
     setLoadingAIForExperienceId(currentExperience.id);
     try {
+      const existingResponsibilities = currentExperience.responsibilities.filter(r => r.text.trim() !== '').map(r => r.text);
       const input: GenerateExperienceBulletPointsInput = {
         jobTitle: currentExperience.jobTitle,
         company: currentExperience.company,
-        existingResponsibilities: currentExperience.responsibilities.filter(r => r.text.trim() !== '').map(r => r.text),
+        existingResponsibilities: existingResponsibilities,
       };
       const result = await generateExperienceBulletPoints(input);
       if (result.generatedBulletPoints) {
         const newResponsibilities = result.generatedBulletPoints.map(text => ({ id: uuidv4(), text }));
-        updateExperience(expIndex, 'responsibilities', newResponsibilities);
-        toast({ title: "AI Bullet Points Generated!", description: "Responsibilities have been updated." });
+        const combinedResponsibilities = [
+            ...currentExperience.responsibilities.filter(r => r.text.trim() !== ''),
+            ...newResponsibilities
+        ];
+        updateExperience(expIndex, 'responsibilities', combinedResponsibilities);
+        toast({ title: "AI Bullet Points Generated!", description: "New responsibilities have been added." });
       }
     } catch (error) {
       console.error("AI Bullet Point generation failed:", error);
