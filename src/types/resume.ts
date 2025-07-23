@@ -122,6 +122,9 @@ export const defaultResumeData: ResumeData = {
   languages: [],
   customSections: [],
   meta: {
+    jobDescription: '',
+    atsScore: 0,
+    improvementSuggestions: [],
     lastModified: new Date().toISOString(),
   },
   settings: {
