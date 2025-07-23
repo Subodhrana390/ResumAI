@@ -175,12 +175,10 @@ export const ExperienceForm = ({ resume, updateField }: FormProps) => {
       };
       const result = await generateExperienceBulletPoints(input);
       if (result.generatedBulletPoints) {
-        const newResponsibilities = result.generatedBulletPoints.map(text => ({ id: uuidv4(), text }));
-        const combinedResponsibilities = [
-            ...currentExperience.responsibilities.filter(r => r.text.trim() !== ''),
-            ...newResponsibilities
-        ];
-        updateExperience(expIndex, 'responsibilities', combinedResponsibilities);
+        updateExperience(expIndex, 'responsibilities', [
+          ...currentExperience.responsibilities.filter(r => r.text.trim() !== ''),
+          ...result.generatedBulletPoints.map(text => ({ id: uuidv4(), text }))
+        ]);
         toast({ title: "AI Bullet Points Generated!", description: "New responsibilities have been added." });
       }
     } catch (error) {
