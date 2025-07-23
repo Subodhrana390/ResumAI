@@ -21,7 +21,7 @@ import { db } from '@/lib/firebase';
 export default function GenerateResumePage() {
     const { user } = useAuth();
     const router = useRouter();
-    const { resumes } = useResumeContext();
+    const { resumes, setActiveResumeById, updateActiveResume } = useResumeContext();
     const { toast } = useToast();
 
     const [jobDescription, setJobDescription] = useState('');
@@ -122,6 +122,11 @@ export default function GenerateResumePage() {
             
             const resumeRef = doc(db, 'users', user.uid, 'resumes', newId);
             await setDoc(resumeRef, newResumeData);
+
+            // Directly update the context to avoid race conditions
+            updateActiveResume(currentResumes => ({...currentResumes, ...newResumeData}));
+            setActiveResumeById(newId);
+
 
             toast({ title: "AI Resume Generated!", description: "Redirecting you to the editor..." });
             router.push(`/resumes/editor/${newId}`);

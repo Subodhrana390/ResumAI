@@ -108,12 +108,26 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     const resumeToActivate = resumes.find(r => r.id === id);
-    setActiveResume(resumeToActivate || null);
+    if(resumeToActivate) {
+        setActiveResume(resumeToActivate);
+    } else {
+        // This case can happen if a resume is newly created and the main `resumes` array hasn't been re-fetched.
+        // We'll trust the ID and set a partial active resume, which will be filled out once `loadResumes` runs.
+        setActiveResume({ ...defaultResumeData, id: id, versionName: 'Loading...' });
+    }
   }, [resumes]);
 
   const updateActiveResume = useCallback((updater: (prev: ResumeData | null) => ResumeData) => {
     setActiveResume(prev => {
       const updated = updater(prev);
+       // Also update the main resumes list so changes are reflected immediately.
+        setResumes(currentResumes => {
+            const exists = currentResumes.some(r => r.id === updated.id);
+            if (exists) {
+                return currentResumes.map(r => r.id === updated.id ? updated : r);
+            }
+            return [...currentResumes, updated];
+        });
       return { ...updated, meta: { ...updated.meta, lastModified: new Date().toISOString() } };
     });
   }, []);
