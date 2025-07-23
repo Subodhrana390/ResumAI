@@ -79,13 +79,14 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const newId = uuidv4();
-    const newResume: ResumeData = {
-      ...defaultResumeData,
-      id: newId,
-      versionName: `Untitled Resume ${resumes.length + 1}`,
-      contact: { ...defaultResumeData.contact, name: user.displayName || '', email: user.email || '' },
-      meta: { ...defaultResumeData.meta, lastModified: new Date().toISOString() },
-    };
+    // Deep copy to ensure all nested objects are new, then overwrite specific fields.
+    const newResume: ResumeData = JSON.parse(JSON.stringify(defaultResumeData));
+    newResume.id = newId;
+    newResume.versionName = `Untitled Resume ${resumes.length + 1}`;
+    newResume.contact.name = user.displayName || '';
+    newResume.contact.email = user.email || '';
+    newResume.contact.photoUrl = user.photoURL || '';
+    newResume.meta.lastModified = new Date().toISOString();
     
     try {
         const resumeRef = doc(db, 'users', user.uid, 'resumes', newId);
