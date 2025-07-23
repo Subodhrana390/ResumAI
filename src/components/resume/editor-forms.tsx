@@ -312,11 +312,11 @@ export const ProjectsForm = ({ resume, updateField }: FormProps) => {
         <Card key={proj.id} className="p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Project Name</Label><Input value={proj.name} onChange={e => updateProject(index, 'name', e.target.value)} placeholder="AI Resume Builder" /></div>
-            <div><Label>Project Link (Optional)</Label><Input value={proj.link || ''} onChange={e => updateProject(index, 'link', e.target.value)} placeholder="https://github.com/user/repo" /></div>
+            <div><Label>Project Link (Optional)</Label><Input value={proj.link} onChange={e => updateProject(index, 'link', e.target.value)} placeholder="https://github.com/user/repo" /></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><Label>Start Date</Label><Input type="month" value={proj.startDate || ''} onChange={e => updateProject(index, 'startDate', e.target.value)} /></div>
-            <div><Label>End Date</Label><Input type="month" value={proj.endDate || ''} onChange={e => updateProject(index, 'endDate', e.target.value)} /></div>
+            <div><Label>Start Date</Label><Input type="month" value={proj.startDate} onChange={e => updateProject(index, 'startDate', e.target.value)} /></div>
+            <div><Label>End Date</Label><Input type="month" value={proj.endDate} onChange={e => updateProject(index, 'endDate', e.target.value)} /></div>
           </div>
           <div>
             <Label>Technologies Used</Label>
@@ -389,7 +389,7 @@ export const EducationForm = ({ resume, updateField }: FormProps) => {
           </div>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Field of Study</Label><Input value={edu.fieldOfStudy} onChange={e => updateEducation(index, 'fieldOfStudy', e.target.value)} placeholder="Computer Science" /></div>
-            <div><Label>GPA (Optional)</Label><Input value={edu.gpa || ''} onChange={e => updateEducation(index, 'gpa', e.target.value)} placeholder="3.8/4.0" /></div>
+            <div><Label>GPA (Optional)</Label><Input value={edu.gpa} onChange={e => updateEducation(index, 'gpa', e.target.value)} placeholder="3.8/4.0" /></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Start Date</Label><Input type="month" value={edu.startDate} onChange={e => updateEducation(index, 'startDate', e.target.value)} /></div>
@@ -527,7 +527,7 @@ export const LanguagesForm = ({ resume, updateField }: FormProps) => {
               </div>
               <div>
                 <Label htmlFor={`lang-prof-${lang.id}`}>Proficiency (Optional)</Label>
-                <Input id={`lang-prof-${lang.id}`} value={lang.proficiency || ''} onChange={e => updateLanguage(index, 'proficiency', e.target.value)} placeholder="e.g., Fluent, Conversational" />
+                <Input id={`lang-prof-${lang.id}`} value={lang.proficiency} onChange={e => updateLanguage(index, 'proficiency', e.target.value)} placeholder="e.g., Fluent, Conversational" />
               </div>
             </div>
             <Button variant="destructive" size="sm" onClick={() => removeLanguage(index)}>Remove Language</Button>
@@ -652,7 +652,7 @@ export const CustomSectionsForm = ({ resume, updateField }: FormProps) => {
                             <Label htmlFor={`cs-${section.id}-item-${item.id}-subcontent`}>Sub-content (Optional)</Label>
                             <Input 
                             id={`cs-${section.id}-item-${item.id}-subcontent`}
-                            value={item.subContent || ''} 
+                            value={item.subContent} 
                             onChange={e => updateCustomSectionItemValue(sectionIndex, itemIndex, 'subContent', e.target.value)} 
                             placeholder="e.g., XYZ University, Street Photography" 
                             />
@@ -661,7 +661,7 @@ export const CustomSectionsForm = ({ resume, updateField }: FormProps) => {
                             <Label htmlFor={`cs-${section.id}-item-${item.id}-date`}>Date (Optional)</Label>
                             <Input 
                             id={`cs-${section.id}-item-${item.id}-date`}
-                            value={item.date || ''} 
+                            value={item.date} 
                             onChange={e => updateCustomSectionItemValue(sectionIndex, itemIndex, 'date', e.target.value)} 
                             placeholder="e.g., Spring 2023, 2020 - Present" 
                             />

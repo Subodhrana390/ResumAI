@@ -1,4 +1,5 @@
 
+
 export interface ResumeContact {
   name: string;
   email: string;
@@ -7,7 +8,7 @@ export interface ResumeContact {
   github: string;
   portfolio: string;
   address: string;
-  photoUrl?: string;
+  photoUrl: string;
 }
 
 export interface ResumeResponsibility {
@@ -33,7 +34,7 @@ export interface ResumeEducation {
   fieldOfStudy: string;
   startDate: string;
   endDate: string;
-  gpa?: string;
+  gpa: string;
 }
 
 export interface ResumeSkill {
@@ -47,22 +48,22 @@ export interface ResumeProject {
   name: string;
   description: string;
   technologies: string[];
-  link?: string;
-  startDate?: string;
-  endDate?: string;
+  link: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface ResumeLanguage {
   id: string;
   name: string;
-  proficiency?: string; // e.g., Native, Fluent, Conversational, Basic
+  proficiency: string;
 }
 
 export interface ResumeCustomSectionItem {
   id: string;
   content: string;
-  subContent?: string;
-  date?: string;
+  subContent: string;
+  date: string;
 }
 export interface ResumeCustomSection {
   id: string;
