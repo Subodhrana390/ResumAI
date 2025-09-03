@@ -46,20 +46,20 @@ export const ContactForm = ({ resume, updateField, handlePhotoUpload, isUploadin
     <CardHeader><CardTitle className="flex items-center gap-2"><Info className="w-5 h-5 text-primary" />Contact Information</CardTitle></CardHeader>
     <CardContent className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><Label htmlFor="name">Full Name</Label><Input id="name" value={resume.contact.name} onChange={e => updateField('contact.name', e.target.value)} placeholder="John Doe" /></div>
-        <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={resume.contact.email} onChange={e => updateField('contact.email', e.target.value)} placeholder="john.doe@example.com" /></div>
+        <div><Label htmlFor="name">Full Name</Label><Input id="name" value={resume.contact.name || ''} onChange={e => updateField('contact.name', e.target.value)} placeholder="John Doe" /></div>
+        <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={resume.contact.email || ''} onChange={e => updateField('contact.email', e.target.value)} placeholder="john.doe@example.com" /></div>
       </div>
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><Label htmlFor="jobPosition">Job Position</Label><Input id="jobPosition" value={resume.contact.jobPosition} onChange={e => updateField('contact.jobPosition', e.target.value)} placeholder="e.g., Software Engineer" /></div>
-        <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={resume.contact.phone} onChange={e => updateField('contact.phone', e.target.value)} placeholder="(123) 456-7890" /></div>
+        <div><Label htmlFor="jobPosition">Job Position</Label><Input id="jobPosition" value={resume.contact.jobPosition || ''} onChange={e => updateField('contact.jobPosition', e.target.value)} placeholder="e.g., Software Engineer" /></div>
+        <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={resume.contact.phone || ''} onChange={e => updateField('contact.phone', e.target.value)} placeholder="(123) 456-7890" /></div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><Label htmlFor="address">Address</Label><Input id="address" value={resume.contact.address} onChange={e => updateField('contact.address', e.target.value)} placeholder="City, State" /></div>
-        <div><Label htmlFor="linkedin">LinkedIn</Label><Input id="linkedin" value={resume.contact.linkedin} onChange={e => updateField('contact.linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" /></div>
+        <div><Label htmlFor="address">Address</Label><Input id="address" value={resume.contact.address || ''} onChange={e => updateField('contact.address', e.target.value)} placeholder="City, State" /></div>
+        <div><Label htmlFor="linkedin">LinkedIn</Label><Input id="linkedin" value={resume.contact.linkedin || ''} onChange={e => updateField('contact.linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" /></div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><Label htmlFor="github">GitHub</Label><Input id="github" value={resume.contact.github} onChange={e => updateField('contact.github', e.target.value)} placeholder="github.com/johndoe" /></div>
-        <div><Label htmlFor="portfolio">Portfolio/Website</Label><Input id="portfolio" value={resume.contact.portfolio} onChange={e => updateField('contact.portfolio', e.target.value)} placeholder="johndoe.com" /></div>
+        <div><Label htmlFor="github">GitHub</Label><Input id="github" value={resume.contact.github || ''} onChange={e => updateField('contact.github', e.target.value)} placeholder="github.com/johndoe" /></div>
+        <div><Label htmlFor="portfolio">Portfolio/Website</Label><Input id="portfolio" value={resume.contact.portfolio || ''} onChange={e => updateField('contact.portfolio', e.target.value)} placeholder="johndoe.com" /></div>
       </div>
       <Separator />
       <div className="space-y-2">
