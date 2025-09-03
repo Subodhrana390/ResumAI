@@ -69,6 +69,7 @@ export default function ResumeEditorPage() {
   const { toast } = useToast();
 
   const [isLoadingAITailoring, setIsLoadingAITailoring] = useState(false);
+  const [jobPosition, setJobPosition] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [atsReport, setAtsReport] =
     useState<ResumeImprovementSuggestionsOutput | null>(null);
@@ -78,6 +79,12 @@ export default function ResumeEditorPage() {
   useEffect(() => {
     setActiveResumeById(resumeId);
   }, [resumeId, setActiveResumeById]);
+
+  useEffect(() => {
+    if (activeResume?.meta.jobDescription) {
+        setJobDescription(activeResume.meta.jobDescription);
+    }
+  }, [activeResume?.meta.jobDescription]);
 
   const handleUpdateField = useCallback(
     (fieldPath: string, value: any) => {
@@ -106,10 +113,10 @@ export default function ResumeEditorPage() {
   };
 
   const handleGetAtsSuggestions = async () => {
-    if (!activeResume || !jobDescription) {
+    if (!activeResume || (!jobDescription && !jobPosition)) {
       toast({
         title: "Missing Information",
-        description: "Please provide a job description.",
+        description: "Please provide a job position or description.",
         variant: "destructive",
       });
       return;
@@ -178,6 +185,7 @@ export default function ResumeEditorPage() {
 
       const suggestionInput: ResumeImprovementSuggestionsInput = {
         resumeContent: resumeFullContent,
+        jobPosition: jobPosition,
         jobDescription: jobDescription,
       };
       const suggestionsResult = await getResumeImprovementSuggestions(
@@ -599,7 +607,16 @@ export default function ResumeEditorPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
+                      <div className="space-y-2">
+                          <Label htmlFor="job-position">Target Job Position</Label>
+                          <Input
+                              id="job-position"
+                              value={jobPosition}
+                              onChange={(e) => setJobPosition(e.target.value)}
+                              placeholder="e.g., Software Engineer"
+                          />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="job-description">Job Description</Label>
                         <Textarea
                           id="job-description"
