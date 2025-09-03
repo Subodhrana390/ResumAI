@@ -164,8 +164,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
         const resumeRef = doc(db, 'users', user.uid, 'resumes', id);
         await deleteDoc(resumeRef);
         
-        const updatedResumes = resumes.filter(r => r.id !== id);
-        setResumes(updatedResumes);
+        setResumes(prevResumes => prevResumes.filter(r => r.id !== id));
         
         if (activeResume?.id === id) {
           setActiveResume(null);
@@ -175,7 +174,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error deleting resume from Firestore:", error);
         toast({ title: "Delete Error", description: "The resume could not be deleted.", variant: "destructive"});
     }
-  }, [resumes, activeResume, user, toast]);
+  }, [activeResume?.id, user, toast]);
 
   const duplicateResume = useCallback(async (id: string): Promise<ResumeData | null> => {
     if (!user || !db) {
@@ -200,7 +199,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
 
     const newId = uuidv4();
     const duplicatedResume: ResumeData = {
-      ...resumeToDuplicate,
+      ...JSON.parse(JSON.stringify(resumeToDuplicate)), // Deep copy
       id: newId,
       versionName: `${resumeToDuplicate.versionName} (Copy)`,
       meta: { ...resumeToDuplicate.meta, lastModified: new Date().toISOString() },
