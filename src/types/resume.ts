@@ -84,6 +84,7 @@ export interface ResumeData {
   languages: ResumeLanguage[];
   customSections: ResumeCustomSection[];
   meta: {
+    jobPosition?: string;
     jobDescription?: string;
     atsScore?: number;
     improvementSuggestions?: string[];
@@ -122,6 +123,7 @@ export const defaultResumeData: ResumeData = {
   languages: [],
   customSections: [],
   meta: {
+    jobPosition: '',
     jobDescription: '',
     atsScore: 0,
     improvementSuggestions: [],

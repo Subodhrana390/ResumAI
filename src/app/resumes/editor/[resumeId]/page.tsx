@@ -69,8 +69,6 @@ export default function ResumeEditorPage() {
   const { toast } = useToast();
 
   const [isLoadingAITailoring, setIsLoadingAITailoring] = useState(false);
-  const [jobPosition, setJobPosition] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
   const [atsReport, setAtsReport] =
     useState<ResumeImprovementSuggestionsOutput | null>(null);
   const [prevAtsScore, setPrevAtsScore] = useState<number | null>(null);
@@ -80,11 +78,6 @@ export default function ResumeEditorPage() {
     setActiveResumeById(resumeId);
   }, [resumeId, setActiveResumeById]);
 
-  useEffect(() => {
-    if (activeResume?.meta.jobDescription) {
-        setJobDescription(activeResume.meta.jobDescription);
-    }
-  }, [activeResume?.meta.jobDescription]);
 
   const handleUpdateField = useCallback(
     (fieldPath: string, value: any) => {
@@ -113,7 +106,7 @@ export default function ResumeEditorPage() {
   };
 
   const handleGetAtsSuggestions = async () => {
-    if (!activeResume || (!jobDescription && !jobPosition)) {
+    if (!activeResume || (!activeResume.meta.jobDescription && !activeResume.meta.jobPosition)) {
       toast({
         title: "Missing Information",
         description: "Please provide a job position or description.",
@@ -185,8 +178,8 @@ export default function ResumeEditorPage() {
 
       const suggestionInput: ResumeImprovementSuggestionsInput = {
         resumeContent: resumeFullContent,
-        jobPosition: jobPosition,
-        jobDescription: jobDescription,
+        jobPosition: activeResume.meta.jobPosition,
+        jobDescription: activeResume.meta.jobDescription,
       };
       const suggestionsResult = await getResumeImprovementSuggestions(
         suggestionInput
@@ -517,7 +510,7 @@ export default function ResumeEditorPage() {
                   <SkillsForm
                     resume={activeResume}
                     updateField={handleUpdateField}
-                    jobDescriptionForAISkills={jobDescription}
+                    jobDescriptionForAISkills={activeResume.meta.jobDescription || ''}
                   />
                   <LanguagesForm
                     resume={activeResume}
@@ -611,8 +604,8 @@ export default function ResumeEditorPage() {
                           <Label htmlFor="job-position">Target Job Position</Label>
                           <Input
                               id="job-position"
-                              value={jobPosition}
-                              onChange={(e) => setJobPosition(e.target.value)}
+                              value={activeResume.meta.jobPosition || ''}
+                              onChange={(e) => handleUpdateField("meta.jobPosition", e.target.value)}
                               placeholder="e.g., Software Engineer"
                           />
                       </div>
@@ -620,8 +613,8 @@ export default function ResumeEditorPage() {
                         <Label htmlFor="job-description">Job Description</Label>
                         <Textarea
                           id="job-description"
-                          value={jobDescription}
-                          onChange={(e) => setJobDescription(e.target.value)}
+                          value={activeResume.meta.jobDescription || ''}
+                          onChange={(e) => handleUpdateField("meta.jobDescription", e.target.value)}
                           placeholder="Paste job description here for targeted suggestions..."
                           rows={5}
                         />
