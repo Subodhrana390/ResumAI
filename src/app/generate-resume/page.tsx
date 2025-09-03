@@ -101,6 +101,8 @@ export default function GenerateResumePage() {
                     description: proj.description,
                     technologies: proj.technologies,
                     link: '',
+                    startDate: '',
+                    endDate: ''
                 })),
                 skills: result.skills.map(skill => ({ id: uuidv4(), name: skill, category: '' })),
                 languages: [],
@@ -128,8 +130,8 @@ export default function GenerateResumePage() {
             setActiveResumeById(newId);
 
 
-            toast({ title: "AI Resume Generated!", description: "Redirecting you to the editor..." });
-            router.push(`/resumes/editor/${newId}`);
+            toast({ title: "AI Resume Generated!", description: "Redirecting you to your dashboard..." });
+            router.push(`/resumes`);
 
         } catch (error) {
             console.error("Resume generation failed:", error);
