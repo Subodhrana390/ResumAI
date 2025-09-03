@@ -70,6 +70,7 @@ export default function GenerateResumePage() {
                 contact: {
                     name: result.contact.name,
                     email: result.contact.email,
+                    jobPosition: result.contact.jobPosition || jobPosition,
                     phone: result.contact.phone || '',
                     address: result.contact.address || '',
                     linkedin: result.contact.linkedin || '',
