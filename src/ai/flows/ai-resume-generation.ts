@@ -49,6 +49,7 @@ const GenerateAiResumeOutputSchema = z.object({
   contact: z.object({
     name: z.string(),
     email: z.string(),
+    jobPosition: z.string().optional().default(''),
     phone: z.string().optional().default(''),
     linkedin: z.string().optional().default(''),
     address: z.string().optional().default(''),
@@ -87,7 +88,7 @@ Your task is to generate a complete, structured resume for a user based on the i
 **Instructions:**
 1.  **Analyze the Job Description**: Carefully read the job description for the '{{{jobPosition}}}' role to understand the key requirements, skills, and qualifications.
 2.  **Generate a Full Resume**: Create a complete resume in the required JSON format.
-3.  **Contact Info**: Use the provided full name and email. You can generate a plausible phone number, address, and LinkedIn profile URL if not provided. Always return a string, even if it's empty.
+3.  **Contact Info**: Use the provided full name and email. Use the target job position for the 'jobPosition' field. You can generate a plausible phone number, address, and LinkedIn profile URL if not provided. Always return a string, even if it's empty.
 4.  **Summary**: Write a powerful, concise professional summary that immediately highlights the candidate's suitability for the role described.
 5.  **Experience**:
     - Based on the job description, create 1 or 2 highly relevant and impactful work experience entries. The job titles should be relevant to the target '{{{jobPosition}}}'.
@@ -113,6 +114,7 @@ const generateAiResumeFlow = ai.defineFlow(
       throw new Error('AI failed to generate a resume.');
     }
     // Ensure optional fields are not undefined.
+    output.contact.jobPosition = output.contact.jobPosition || input.jobPosition;
     output.contact.phone = output.contact.phone || '';
     output.contact.address = output.contact.address || '';
     output.contact.linkedin = output.contact.linkedin || '';

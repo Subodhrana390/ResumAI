@@ -3,6 +3,7 @@
 export interface ResumeContact {
   name: string;
   email: string;
+  jobPosition: string;
   phone: string;
   linkedin: string;
   github: string;
@@ -108,6 +109,7 @@ export const defaultResumeData: ResumeData = {
   contact: {
     name: '',
     email: '',
+    jobPosition: '',
     phone: '',
     linkedin: '',
     github: '',
