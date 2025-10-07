@@ -64,6 +64,7 @@ Specific focus requested by user: {{{userPrompt}}}
 {{/if}}
 
 Please generate 3 to 5 concise, professional, and achievement-oriented bullet points.
+If there are existing bullet points, you can either improve them or add new ones that are relevant. Do not simply repeat the existing ones.
 Use strong action verbs. Quantify accomplishments where possible.
 The output should be a list of bullet points.`,
 });

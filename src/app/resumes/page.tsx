@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as ReactDOM from 'react-dom/client';
 import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppShell } from '@/components/layout/app-shell';
@@ -79,76 +78,101 @@ export default function ResumesDashboardPage() {
     if (isDownloading) return;
     setIsDownloading(resumeToDownload.id);
     toast({ title: "Preparing PDF...", description: "Please wait a moment." });
+  
+    const doc = new jsPDF("p", "pt", "a4");
+    const margin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const contentWidth = pageWidth - margin * 2;
+    let y = margin;
+  
+    const addText = (text: string, options: any, isLink = false) => {
+        const lines = doc.splitTextToSize(text, contentWidth - (options.xOffset || 0));
+        lines.forEach((line: string) => {
+            if (y > doc.internal.pageSize.getHeight() - margin) {
+                doc.addPage();
+                y = margin;
+            }
+            if (isLink) {
+                 doc.textWithLink(line, margin + (options.xOffset || 0), y, { url: line });
+            } else {
+                 doc.text(line, margin + (options.xOffset || 0), y, {});
+            }
+            y += options.fontSize * 1.2;
+        });
+    };
+  
+    // --- Header ---
+    doc.setFontSize(22).setFont('helvetica', 'bold');
+    addText(resumeToDownload.contact.name, { fontSize: 22 });
+    y += 5;
+    doc.setFontSize(10).setFont('helvetica', 'normal');
+    addText(`${resumeToDownload.contact.email} | ${resumeToDownload.contact.phone}`, { fontSize: 10 });
+    y += 15;
+  
+    // --- Summary ---
+    if (resumeToDownload.summary) {
+      doc.setFontSize(12).setFont('helvetica', 'bold');
+      addText('Summary', { fontSize: 12 });
+      y += 2;
+      doc.setDrawColor(0);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
+      doc.setFontSize(10).setFont('helvetica', 'normal');
+      addText(resumeToDownload.summary, { fontSize: 10 });
+      y += 15;
+    }
+  
+    // --- Experience ---
+    if (resumeToDownload.experience?.length > 0) {
+      doc.setFontSize(12).setFont('helvetica', 'bold');
+      addText('Experience', { fontSize: 12 });
+      y += 2;
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
+      resumeToDownload.experience.forEach(exp => {
+        doc.setFontSize(10).setFont('helvetica', 'bold');
+        addText(`${exp.jobTitle} at ${exp.company}`, { fontSize: 10 });
+        doc.setFontSize(9).setFont('helvetica', 'italic');
+        addText(`${exp.startDate} - ${exp.isCurrent ? 'Present' : exp.endDate} | ${exp.location}`, { fontSize: 9 });
+        y += 5;
+        doc.setFontSize(10).setFont('helvetica', 'normal');
+        exp.responsibilities.forEach(resp => {
+            addText(`• ${resp.text}`, { fontSize: 10, xOffset: 10 });
+        });
+        y += 10;
+      });
+    }
+    
+    // --- Education ---
+    if (resumeToDownload.education?.length > 0) {
+      doc.setFontSize(12).setFont('helvetica', 'bold');
+      addText('Education', { fontSize: 12 });
+      y += 2;
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
+      resumeToDownload.education.forEach(edu => {
+        doc.setFontSize(10).setFont('helvetica', 'bold');
+        addText(`${edu.degree}, ${edu.fieldOfStudy}`, { fontSize: 10 });
+        doc.setFontSize(9).setFont('helvetica', 'normal');
+        addText(`${edu.institution} | ${edu.startDate} - ${edu.endDate}`, { fontSize: 9 });
+        y += 10;
+      });
+    }
 
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '800px';
-    document.body.appendChild(container);
-
-    const root = ReactDOM.createRoot(container);
-    root.render(<ResumePreview resumeData={resumeToDownload} />);
-
-    setTimeout(() => {
-        const resumeContentElement = container.querySelector('#resume-preview-content') as HTMLElement;
-
-        if (resumeContentElement) {
-            const cardElement = resumeContentElement.closest('.bg-card') as HTMLElement;
-            if (cardElement) cardElement.style.boxShadow = 'none';
-
-            html2canvas(resumeContentElement, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                width: resumeContentElement.scrollWidth,
-                windowWidth: resumeContentElement.scrollWidth,
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('p', 'pt', 'a4');
-
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                
-                const canvasWidth = canvas.width;
-                const canvasHeight = canvas.height;
-                const ratio = canvasHeight / canvasWidth;
-
-                const pageMargin = 20; // points, approx 0.28 inches
-                const imgWidthOnPdf = pdfWidth - (pageMargin * 2);
-                const imgHeightOnPdf = imgWidthOnPdf * ratio;
-
-                let heightLeft = imgHeightOnPdf;
-                let position = pageMargin;
-
-                pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidthOnPdf, imgHeightOnPdf);
-                heightLeft -= (pdfHeight - (pageMargin * 2));
-
-                while (heightLeft > 0) {
-                    position = position - (pdfHeight - (pageMargin * 2));
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidthOnPdf, imgHeightOnPdf);
-                    heightLeft -= (pdfHeight - (pageMargin * 2));
-                }
-                
-                pdf.save(`${resumeToDownload.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
-                toast({ title: "PDF Downloaded", description: "Your resume has been downloaded." });
-
-            }).catch(err => {
-                console.error("Error generating PDF with html2canvas:", err);
-                toast({ title: "PDF Generation Failed", description: "Could not generate PDF.", variant: "destructive" });
-            }).finally(() => {
-                root.unmount();
-                document.body.removeChild(container);
-                setIsDownloading(null);
-            });
-        } else {
-            root.unmount();
-            document.body.removeChild(container);
-            setIsDownloading(null);
-            toast({ title: "Error", description: "Failed to prepare resume for PDF generation.", variant: "destructive" });
-        }
-    }, 200);
+    // --- Skills ---
+    if (resumeToDownload.skills?.length > 0) {
+        doc.setFontSize(12).setFont('helvetica', 'bold');
+        addText('Skills', { fontSize: 12 });
+        y += 2;
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 15;
+        doc.setFontSize(10).setFont('helvetica', 'normal');
+        addText(resumeToDownload.skills.map(s => s.name).join(', '), { fontSize: 10 });
+    }
+  
+    doc.save(`${resumeToDownload.versionName.replace(/\s+/g, '_')}_ResumAI.pdf`);
+    toast({ title: "PDF Downloaded", description: "Your resume has been downloaded." });
+    setIsDownloading(null);
   };
 
 

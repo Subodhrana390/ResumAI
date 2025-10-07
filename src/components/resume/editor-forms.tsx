@@ -46,19 +46,20 @@ export const ContactForm = ({ resume, updateField, handlePhotoUpload, isUploadin
     <CardHeader><CardTitle className="flex items-center gap-2"><Info className="w-5 h-5 text-primary" />Contact Information</CardTitle></CardHeader>
     <CardContent className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><Label htmlFor="name">Full Name</Label><Input id="name" value={resume.contact.name} onChange={e => updateField('contact.name', e.target.value)} placeholder="John Doe" /></div>
-        <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={resume.contact.email} onChange={e => updateField('contact.email', e.target.value)} placeholder="john.doe@example.com" /></div>
+        <div><Label htmlFor="name">Full Name</Label><Input id="name" value={resume.contact.name || ''} onChange={e => updateField('contact.name', e.target.value)} placeholder="John Doe" /></div>
+        <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={resume.contact.email || ''} onChange={e => updateField('contact.email', e.target.value)} placeholder="john.doe@example.com" /></div>
+      </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><Label htmlFor="jobPosition">Job Position</Label><Input id="jobPosition" value={resume.contact.jobPosition || ''} onChange={e => updateField('contact.jobPosition', e.target.value)} placeholder="e.g., Software Engineer" /></div>
+        <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={resume.contact.phone || ''} onChange={e => updateField('contact.phone', e.target.value)} placeholder="(123) 456-7890" /></div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={resume.contact.phone} onChange={e => updateField('contact.phone', e.target.value)} placeholder="(123) 456-7890" /></div>
-        <div><Label htmlFor="address">Address</Label><Input id="address" value={resume.contact.address} onChange={e => updateField('contact.address', e.target.value)} placeholder="City, State" /></div>
+        <div><Label htmlFor="address">Address</Label><Input id="address" value={resume.contact.address || ''} onChange={e => updateField('contact.address', e.target.value)} placeholder="City, State" /></div>
+        <div><Label htmlFor="linkedin">LinkedIn</Label><Input id="linkedin" value={resume.contact.linkedin || ''} onChange={e => updateField('contact.linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" /></div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><Label htmlFor="linkedin">LinkedIn</Label><Input id="linkedin" value={resume.contact.linkedin} onChange={e => updateField('contact.linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" /></div>
-        <div><Label htmlFor="github">GitHub</Label><Input id="github" value={resume.contact.github} onChange={e => updateField('contact.github', e.target.value)} placeholder="github.com/johndoe" /></div>
-      </div>
-      <div className="grid grid-cols-1">
-        <div><Label htmlFor="portfolio">Portfolio/Website</Label><Input id="portfolio" value={resume.contact.portfolio} onChange={e => updateField('contact.portfolio', e.target.value)} placeholder="johndoe.com" /></div>
+        <div><Label htmlFor="github">GitHub</Label><Input id="github" value={resume.contact.github || ''} onChange={e => updateField('contact.github', e.target.value)} placeholder="github.com/johndoe" /></div>
+        <div><Label htmlFor="portfolio">Portfolio/Website</Label><Input id="portfolio" value={resume.contact.portfolio || ''} onChange={e => updateField('contact.portfolio', e.target.value)} placeholder="johndoe.com" /></div>
       </div>
       <Separator />
       <div className="space-y-2">
@@ -92,7 +93,7 @@ export const SummaryForm = ({ resume, updateField }: FormProps) => {
         try {
             const input: CareerSummaryInput = {
                 experienceLevel: 'student', 
-                jobTitle: resume.experience[0]?.jobTitle || 'Entry-level role',
+                jobTitle: resume.contact.jobPosition || resume.experience[0]?.jobTitle || 'Entry-level role',
                 skills: resume.skills.map(s => s.name).join(', '),
                 experienceSummary: resume.experience.map(e => `${e.jobTitle} at ${e.company}: ${e.responsibilities.map(r => r.text).join('. ')}`).join('\n'),
             };
@@ -167,16 +168,19 @@ export const ExperienceForm = ({ resume, updateField }: FormProps) => {
     }
     setLoadingAIForExperienceId(currentExperience.id);
     try {
+      const existingResponsibilities = currentExperience.responsibilities.filter(r => r.text.trim() !== '').map(r => r.text);
       const input: GenerateExperienceBulletPointsInput = {
         jobTitle: currentExperience.jobTitle,
         company: currentExperience.company,
-        existingResponsibilities: currentExperience.responsibilities.filter(r => r.text.trim() !== '').map(r => r.text),
+        existingResponsibilities: existingResponsibilities,
       };
       const result = await generateExperienceBulletPoints(input);
       if (result.generatedBulletPoints) {
-        const newResponsibilities = result.generatedBulletPoints.map(text => ({ id: uuidv4(), text }));
-        updateExperience(expIndex, 'responsibilities', newResponsibilities);
-        toast({ title: "AI Bullet Points Generated!", description: "Responsibilities have been updated." });
+        updateExperience(expIndex, 'responsibilities', [
+          ...currentExperience.responsibilities.filter(r => r.text.trim() !== ''),
+          ...result.generatedBulletPoints.map(text => ({ id: uuidv4(), text }))
+        ]);
+        toast({ title: "AI Bullet Points Generated!", description: "New responsibilities have been added." });
       }
     } catch (error) {
       console.error("AI Bullet Point generation failed:", error);
@@ -312,11 +316,11 @@ export const ProjectsForm = ({ resume, updateField }: FormProps) => {
         <Card key={proj.id} className="p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Project Name</Label><Input value={proj.name} onChange={e => updateProject(index, 'name', e.target.value)} placeholder="AI Resume Builder" /></div>
-            <div><Label>Project Link (Optional)</Label><Input value={proj.link || ''} onChange={e => updateProject(index, 'link', e.target.value)} placeholder="https://github.com/user/repo" /></div>
+            <div><Label>Project Link (Optional)</Label><Input value={proj.link} onChange={e => updateProject(index, 'link', e.target.value)} placeholder="https://github.com/user/repo" /></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><Label>Start Date</Label><Input type="month" value={proj.startDate || ''} onChange={e => updateProject(index, 'startDate', e.target.value)} /></div>
-            <div><Label>End Date</Label><Input type="month" value={proj.endDate || ''} onChange={e => updateProject(index, 'endDate', e.target.value)} /></div>
+            <div><Label>Start Date</Label><Input type="month" value={proj.startDate} onChange={e => updateProject(index, 'startDate', e.target.value)} /></div>
+            <div><Label>End Date</Label><Input type="month" value={proj.endDate} onChange={e => updateProject(index, 'endDate', e.target.value)} /></div>
           </div>
           <div>
             <Label>Technologies Used</Label>
@@ -389,7 +393,7 @@ export const EducationForm = ({ resume, updateField }: FormProps) => {
           </div>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Field of Study</Label><Input value={edu.fieldOfStudy} onChange={e => updateEducation(index, 'fieldOfStudy', e.target.value)} placeholder="Computer Science" /></div>
-            <div><Label>GPA (Optional)</Label><Input value={edu.gpa || ''} onChange={e => updateEducation(index, 'gpa', e.target.value)} placeholder="3.8/4.0" /></div>
+            <div><Label>GPA (Optional)</Label><Input value={edu.gpa} onChange={e => updateEducation(index, 'gpa', e.target.value)} placeholder="3.8/4.0" /></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><Label>Start Date</Label><Input type="month" value={edu.startDate} onChange={e => updateEducation(index, 'startDate', e.target.value)} /></div>
@@ -527,7 +531,7 @@ export const LanguagesForm = ({ resume, updateField }: FormProps) => {
               </div>
               <div>
                 <Label htmlFor={`lang-prof-${lang.id}`}>Proficiency (Optional)</Label>
-                <Input id={`lang-prof-${lang.id}`} value={lang.proficiency || ''} onChange={e => updateLanguage(index, 'proficiency', e.target.value)} placeholder="e.g., Fluent, Conversational" />
+                <Input id={`lang-prof-${lang.id}`} value={lang.proficiency} onChange={e => updateLanguage(index, 'proficiency', e.target.value)} placeholder="e.g., Fluent, Conversational" />
               </div>
             </div>
             <Button variant="destructive" size="sm" onClick={() => removeLanguage(index)}>Remove Language</Button>
@@ -652,7 +656,7 @@ export const CustomSectionsForm = ({ resume, updateField }: FormProps) => {
                             <Label htmlFor={`cs-${section.id}-item-${item.id}-subcontent`}>Sub-content (Optional)</Label>
                             <Input 
                             id={`cs-${section.id}-item-${item.id}-subcontent`}
-                            value={item.subContent || ''} 
+                            value={item.subContent} 
                             onChange={e => updateCustomSectionItemValue(sectionIndex, itemIndex, 'subContent', e.target.value)} 
                             placeholder="e.g., XYZ University, Street Photography" 
                             />
@@ -661,7 +665,7 @@ export const CustomSectionsForm = ({ resume, updateField }: FormProps) => {
                             <Label htmlFor={`cs-${section.id}-item-${item.id}-date`}>Date (Optional)</Label>
                             <Input 
                             id={`cs-${section.id}-item-${item.id}-date`}
-                            value={item.date || ''} 
+                            value={item.date} 
                             onChange={e => updateCustomSectionItemValue(sectionIndex, itemIndex, 'date', e.target.value)} 
                             placeholder="e.g., Spring 2023, 2020 - Present" 
                             />

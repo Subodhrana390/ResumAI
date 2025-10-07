@@ -1,13 +1,15 @@
 
+
 export interface ResumeContact {
   name: string;
   email: string;
+  jobPosition: string;
   phone: string;
   linkedin: string;
   github: string;
   portfolio: string;
   address: string;
-  photoUrl?: string;
+  photoUrl: string;
 }
 
 export interface ResumeResponsibility {
@@ -33,7 +35,7 @@ export interface ResumeEducation {
   fieldOfStudy: string;
   startDate: string;
   endDate: string;
-  gpa?: string;
+  gpa: string;
 }
 
 export interface ResumeSkill {
@@ -47,22 +49,22 @@ export interface ResumeProject {
   name: string;
   description: string;
   technologies: string[];
-  link?: string;
-  startDate?: string;
-  endDate?: string;
+  link: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface ResumeLanguage {
   id: string;
   name: string;
-  proficiency?: string; // e.g., Native, Fluent, Conversational, Basic
+  proficiency: string;
 }
 
 export interface ResumeCustomSectionItem {
   id: string;
   content: string;
-  subContent?: string;
-  date?: string;
+  subContent: string;
+  date: string;
 }
 export interface ResumeCustomSection {
   id: string;
@@ -83,6 +85,7 @@ export interface ResumeData {
   languages: ResumeLanguage[];
   customSections: ResumeCustomSection[];
   meta: {
+    jobPosition?: string;
     jobDescription?: string;
     atsScore?: number;
     improvementSuggestions?: string[];
@@ -106,6 +109,7 @@ export const defaultResumeData: ResumeData = {
   contact: {
     name: '',
     email: '',
+    jobPosition: '',
     phone: '',
     linkedin: '',
     github: '',
@@ -121,6 +125,10 @@ export const defaultResumeData: ResumeData = {
   languages: [],
   customSections: [],
   meta: {
+    jobPosition: '',
+    jobDescription: '',
+    atsScore: 0,
+    improvementSuggestions: [],
     lastModified: new Date().toISOString(),
   },
   settings: {

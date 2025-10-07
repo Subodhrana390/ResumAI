@@ -13,6 +13,7 @@ import {z} from 'zod';
 const GenerateAiResumeInputSchema = z.object({
   fullName: z.string().describe("The user's full name."),
   email: z.string().describe("The user's email address."),
+  jobPosition: z.string().describe('The target job position or title.'),
   jobDescription: z.string().describe('The full job description for the target role.'),
   additionalInfo: z
     .string()
@@ -48,9 +49,10 @@ const GenerateAiResumeOutputSchema = z.object({
   contact: z.object({
     name: z.string(),
     email: z.string(),
-    phone: z.string().optional(),
-    linkedin: z.string().optional(),
-    address: z.string().optional(),
+    jobPosition: z.string().optional().default(''),
+    phone: z.string().optional().default(''),
+    linkedin: z.string().optional().default(''),
+    address: z.string().optional().default(''),
   }),
   summary: z.string().describe("A professional summary for the resume, tailored to the job description."),
   experience: z.array(GeneratedExperienceSchema).describe("A list of 1-2 relevant, impactful work experiences. If the user is a student with no experience, create plausible internship or project-based experiences."),
@@ -79,23 +81,24 @@ Your task is to generate a complete, structured resume for a user based on the i
 - Additional Information/Notes from user: {{{additionalInfo}}}
 {{/if}}
 
-**Target Job Description:**
-{{{jobDescription}}}
+**Target Role:**
+- Job Position: {{{jobPosition}}}
+- Job Description: {{{jobDescription}}}
 
 **Instructions:**
-1.  **Analyze the Job Description**: Carefully read the job description to understand the key requirements, skills, and qualifications.
+1.  **Analyze the Job Description**: Carefully read the job description for the '{{{jobPosition}}}' role to understand the key requirements, skills, and qualifications.
 2.  **Generate a Full Resume**: Create a complete resume in the required JSON format.
-3.  **Contact Info**: Use the provided full name and email. You can generate a plausible phone number, address, and LinkedIn profile URL if not provided.
+3.  **Contact Info**: Use the provided full name and email. Use the target job position for the 'jobPosition' field. You can generate a plausible phone number, address, and LinkedIn profile URL if not provided. Always return a string, even if it's empty.
 4.  **Summary**: Write a powerful, concise professional summary that immediately highlights the candidate's suitability for the role described.
 5.  **Experience**:
-    - Based on the job description, create 1 or 2 highly relevant and impactful work experience entries.
+    - Based on the job description, create 1 or 2 highly relevant and impactful work experience entries. The job titles should be relevant to the target '{{{jobPosition}}}'.
     - If the user seems to be a student or fresher (based on their additional info or lack thereof), invent a plausible internship or a detailed, project-based role that sounds like professional experience.
     - For each experience, write 3-4 achievement-oriented bullet points using strong action verbs. Quantify results where possible.
 6.  **Education**: Generate a standard, relevant educational background (e.g., Bachelor's in Computer Science from a known university).
 7.  **Projects**: Create 1-2 project examples that showcase the skills needed for the job. Include a brief description and the technologies used.
-8.  **Skills**: List 5-10 of the most important technical and soft skills, derived directly from the job description.
+8.  **Skills**: List 5-10 of the most important technical and soft skills, derived directly from the job description and relevant to the '{{{jobPosition}}}'.
 
-The generated resume must be realistic, professional, and directly targeted at the provided job description.
+The generated resume must be realistic, professional, and directly targeted at the provided job profile.
 `,
 });
 
@@ -107,6 +110,14 @@ const generateAiResumeFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('AI failed to generate a resume.');
+    }
+    // Ensure optional fields are not undefined.
+    output.contact.jobPosition = output.contact.jobPosition || input.jobPosition;
+    output.contact.phone = output.contact.phone || '';
+    output.contact.address = output.contact.address || '';
+    output.contact.linkedin = output.contact.linkedin || '';
+    return output;
   }
 );

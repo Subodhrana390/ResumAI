@@ -39,7 +39,7 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
                         )}
                         <div className="creative-header">
                             <h1>{resumeData.contact.name || "Your Name"}</h1>
-                            {resumeData.experience?.[0]?.jobTitle && <p>{resumeData.experience[0].jobTitle}</p>}
+                            {resumeData.contact.jobPosition && <p>{resumeData.contact.jobPosition}</p>}
                         </div>
 
                         {/* Contact Section */}
@@ -349,6 +349,7 @@ export const ResumePreview = ({ resumeData }: { resumeData: ResumeData }) => {
             )}
           <div className="resume-header-content">
             <h1>{resumeData.contact.name || "Your Name"}</h1>
+            <p className="text-lg font-medium text-primary">{resumeData.contact.jobPosition}</p>
             <p>
                 {resumeData.contact.email || "your.email@example.com"}
                 {resumeData.contact.phone && ` | ${resumeData.contact.phone}`}

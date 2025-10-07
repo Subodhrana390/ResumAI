@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, Bot } from 'lucide-react';
@@ -21,9 +22,10 @@ import { db } from '@/lib/firebase';
 export default function GenerateResumePage() {
     const { user } = useAuth();
     const router = useRouter();
-    const { resumes } = useResumeContext();
+    const { resumes, updateActiveResume, setActiveResumeById } = useResumeContext();
     const { toast } = useToast();
 
+    const [jobPosition, setJobPosition] = useState('');
     const [jobDescription, setJobDescription] = useState('');
     const [additionalInfo, setAdditionalInfo] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -33,8 +35,8 @@ export default function GenerateResumePage() {
             toast({ title: "Not logged in or DB error", description: "You need to be logged in to generate a resume.", variant: "destructive" });
             return;
         }
-        if (!jobDescription.trim()) {
-            toast({ title: "Missing Information", description: "Please provide a job description.", variant: "destructive" });
+        if (!jobPosition.trim() || !jobDescription.trim()) {
+            toast({ title: "Missing Information", description: "Please provide a job position and a job description.", variant: "destructive" });
             return;
         }
 
@@ -55,19 +57,20 @@ export default function GenerateResumePage() {
             const result = await generateAiResume({
                 fullName: user.displayName || 'Your Name',
                 email: user.email || 'your.email@example.com',
+                jobPosition,
                 jobDescription,
                 additionalInfo
             });
 
             const newId = uuidv4();
-            const jobTitleFromGen = result.experience[0]?.jobTitle || 'New Role';
             const newResumeData: ResumeData = {
                 id: newId,
-                versionName: `AI Gen: ${jobTitleFromGen}`,
+                versionName: `AI Gen: ${jobPosition}`,
                 template: 'modern',
                 contact: {
                     name: result.contact.name,
                     email: result.contact.email,
+                    jobPosition: result.contact.jobPosition || jobPosition,
                     phone: result.contact.phone || '',
                     address: result.contact.address || '',
                     linkedin: result.contact.linkedin || '',
@@ -101,6 +104,8 @@ export default function GenerateResumePage() {
                     description: proj.description,
                     technologies: proj.technologies,
                     link: '',
+                    startDate: '',
+                    endDate: ''
                 })),
                 skills: result.skills.map(skill => ({ id: uuidv4(), name: skill, category: '' })),
                 languages: [],
@@ -123,8 +128,13 @@ export default function GenerateResumePage() {
             const resumeRef = doc(db, 'users', user.uid, 'resumes', newId);
             await setDoc(resumeRef, newResumeData);
 
-            toast({ title: "AI Resume Generated!", description: "Redirecting you to the editor..." });
-            router.push(`/resumes/editor/${newId}`);
+            // Directly update the context to avoid race conditions
+            updateActiveResume(currentResumes => ({...currentResumes, ...newResumeData}));
+            setActiveResumeById(newId);
+
+
+            toast({ title: "AI Resume Generated!", description: "Redirecting you to your dashboard..." });
+            router.push(`/resumes`);
 
         } catch (error) {
             console.error("Resume generation failed:", error);
@@ -143,11 +153,21 @@ export default function GenerateResumePage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Generate from Job Profile</CardTitle>
-                        <CardDescription>Our AI will analyze the job description and create a full resume optimized for it.</CardDescription>
+                        <CardDescription>Our AI will analyze the job profile and create a full resume optimized for it.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="job-description">1. Paste Job Description</Label>
+                            <Label htmlFor="job-position">1. Target Job Position</Label>
+                            <Input
+                                id="job-position"
+                                value={jobPosition}
+                                onChange={(e) => setJobPosition(e.target.value)}
+                                placeholder="e.g., Software Engineer, Product Manager"
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="job-description">2. Paste Job Description</Label>
                             <Textarea
                                 id="job-description"
                                 value={jobDescription}
@@ -158,7 +178,7 @@ export default function GenerateResumePage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="additional-info">2. Add Optional Notes (Optional)</Label>
+                            <Label htmlFor="additional-info">3. Add Optional Notes</Label>
                              <Textarea
                                 id="additional-info"
                                 value={additionalInfo}
@@ -168,7 +188,7 @@ export default function GenerateResumePage() {
                                 disabled={isLoading}
                             />
                         </div>
-                         <Button onClick={handleGenerate} disabled={isLoading || !jobDescription} size="lg">
+                         <Button onClick={handleGenerate} disabled={isLoading || !jobPosition || !jobDescription} size="lg">
                             {isLoading ? (
                                 <>
                                     <Sparkles className="mr-2 h-4 w-4 animate-spin" /> Generating Your Resume...

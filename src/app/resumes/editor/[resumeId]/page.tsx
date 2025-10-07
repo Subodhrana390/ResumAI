@@ -33,7 +33,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { defaultResumeData, ResumeData } from "@/types/resume";
 import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
 import { cn } from "@/lib/utils";
 import { ResumePreview } from "@/components/resume/resume-preview";
 import { Progress } from "@/components/ui/progress";
@@ -69,7 +68,6 @@ export default function ResumeEditorPage() {
   const { toast } = useToast();
 
   const [isLoadingAITailoring, setIsLoadingAITailoring] = useState(false);
-  const [jobDescription, setJobDescription] = useState("");
   const [atsReport, setAtsReport] =
     useState<ResumeImprovementSuggestionsOutput | null>(null);
   const [prevAtsScore, setPrevAtsScore] = useState<number | null>(null);
@@ -78,6 +76,7 @@ export default function ResumeEditorPage() {
   useEffect(() => {
     setActiveResumeById(resumeId);
   }, [resumeId, setActiveResumeById]);
+
 
   const handleUpdateField = useCallback(
     (fieldPath: string, value: any) => {
@@ -106,10 +105,10 @@ export default function ResumeEditorPage() {
   };
 
   const handleGetAtsSuggestions = async () => {
-    if (!activeResume || !jobDescription) {
+    if (!activeResume || (!activeResume.meta.jobDescription && !activeResume.meta.jobPosition)) {
       toast({
         title: "Missing Information",
-        description: "Please provide a job description.",
+        description: "Please provide a job position or description.",
         variant: "destructive",
       });
       return;
@@ -178,7 +177,8 @@ export default function ResumeEditorPage() {
 
       const suggestionInput: ResumeImprovementSuggestionsInput = {
         resumeContent: resumeFullContent,
-        jobDescription: jobDescription,
+        jobPosition: activeResume.meta.jobPosition,
+        jobDescription: activeResume.meta.jobDescription,
       };
       const suggestionsResult = await getResumeImprovementSuggestions(
         suggestionInput
@@ -201,116 +201,105 @@ export default function ResumeEditorPage() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    const resumeContentElement = document.getElementById(
-      "resume-preview-content"
-    );
-    if (resumeContentElement && activeResume) {
-      const cardElement = resumeContentElement.closest<HTMLElement>(".bg-card");
-
-      const originalStyles = {
-        width: resumeContentElement.style.width,
-        boxShadow: cardElement ? cardElement.getAttribute("style") : "",
-      };
-
-      const fixedWidthForCapturePx = 800;
-      resumeContentElement.style.width = `${fixedWidthForCapturePx}px`;
-      if (cardElement) {
-        cardElement.setAttribute(
-          "style",
-          (cardElement.getAttribute("style") || "") +
-            "; box-shadow: none !important;"
-        );
-      }
-
-      setTimeout(() => {
-        html2canvas(resumeContentElement, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          width: fixedWidthForCapturePx,
-          windowWidth: fixedWidthForCapturePx,
-        })
-          .then((canvas) => {
-            resumeContentElement.style.width = originalStyles.width;
-            if (cardElement && originalStyles.boxShadow !== null) {
-              cardElement.setAttribute("style", originalStyles.boxShadow);
-            } else if (cardElement) {
-              cardElement.style.removeProperty("box-shadow");
+    const handleDownloadPDF = async () => {
+    if (!activeResume) {
+      toast({ title: "Error", description: "No active resume to download.", variant: "destructive" });
+      return;
+    }
+  
+    const doc = new jsPDF("p", "pt", "a4");
+    const margin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const contentWidth = pageWidth - margin * 2;
+    let y = margin;
+  
+    const addText = (text: string, options: any, isLink = false) => {
+        const lines = doc.splitTextToSize(text, contentWidth - (options.xOffset || 0));
+        lines.forEach((line: string) => {
+            if (y > doc.internal.pageSize.getHeight() - margin) {
+                doc.addPage();
+                y = margin;
             }
-
-            const imgData = canvas.toDataURL("image/png");
-            const pdf = new jsPDF("p", "pt", "a4");
-
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const ratio = canvasHeight / canvasWidth;
-
-            const pageMargin = 0;
-            const imgWidthOnPdf = pdfWidth - pageMargin * 2;
-            const imgHeightOnPdf = imgWidthOnPdf * ratio;
-
-            let heightLeft = imgHeightOnPdf;
-            let position = pageMargin;
-
-            pdf.addImage(
-              imgData,
-              "PNG",
-              pageMargin,
-              position,
-              imgWidthOnPdf,
-              imgHeightOnPdf
-            );
-            heightLeft -= pdfHeight - pageMargin * 2;
-
-            while (heightLeft > 0) {
-              position = position - (pdfHeight - pageMargin * 2);
-              pdf.addPage();
-              pdf.addImage(
-                imgData,
-                "PNG",
-                pageMargin,
-                position,
-                imgWidthOnPdf,
-                imgHeightOnPdf
-              );
-              heightLeft -= pdfHeight - pageMargin * 2;
+            if (isLink) {
+                 doc.textWithLink(line, margin + (options.xOffset || 0), y, { url: line });
+            } else {
+                 doc.text(line, margin + (options.xOffset || 0), y, {});
             }
-
-            pdf.save(
-              `${activeResume.versionName.replace(/\s+/g, "_")}_ResumAI.pdf`
-            );
-            toast({
-              title: "PDF Downloaded",
-              description: "Your resume has been downloaded.",
-            });
-          })
-          .catch((err) => {
-            resumeContentElement.style.width = originalStyles.width;
-            if (cardElement && originalStyles.boxShadow !== null) {
-              cardElement.setAttribute("style", originalStyles.boxShadow);
-            } else if (cardElement) {
-              cardElement.style.removeProperty("box-shadow");
-            }
-
-            console.error("Error generating PDF with html2canvas:", err);
-            toast({
-              title: "PDF Generation Failed",
-              description: "Could not generate PDF.",
-              variant: "destructive",
-            });
-          });
-      }, 150);
-    } else {
-      toast({
-        title: "Error",
-        description: "Resume content not found for PDF generation.",
-        variant: "destructive",
+            y += options.fontSize * 1.2;
+        });
+    };
+  
+    // --- Header ---
+    doc.setFontSize(22).setFont('helvetica', 'bold');
+    addText(activeResume.contact.name, { fontSize: 22 });
+    y += 5;
+    doc.setFontSize(10).setFont('helvetica', 'normal');
+    addText(`${activeResume.contact.email} | ${activeResume.contact.phone}`, { fontSize: 10 });
+    y += 15;
+  
+    // --- Summary ---
+    if (activeResume.summary) {
+      doc.setFontSize(12).setFont('helvetica', 'bold');
+      addText('Summary', { fontSize: 12 });
+      y += 2;
+      doc.setDrawColor(0);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
+      doc.setFontSize(10).setFont('helvetica', 'normal');
+      addText(activeResume.summary, { fontSize: 10 });
+      y += 15;
+    }
+  
+    // --- Experience ---
+    if (activeResume.experience?.length > 0) {
+      doc.setFontSize(12).setFont('helvetica', 'bold');
+      addText('Experience', { fontSize: 12 });
+      y += 2;
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
+      activeResume.experience.forEach(exp => {
+        doc.setFontSize(10).setFont('helvetica', 'bold');
+        addText(`${exp.jobTitle} at ${exp.company}`, { fontSize: 10 });
+        doc.setFontSize(9).setFont('helvetica', 'italic');
+        addText(`${exp.startDate} - ${exp.isCurrent ? 'Present' : exp.endDate} | ${exp.location}`, { fontSize: 9 });
+        y += 5;
+        doc.setFontSize(10).setFont('helvetica', 'normal');
+        exp.responsibilities.forEach(resp => {
+            addText(`• ${resp.text}`, { fontSize: 10, xOffset: 10 });
+        });
+        y += 10;
       });
     }
+    
+    // --- Education ---
+    if (activeResume.education?.length > 0) {
+      doc.setFontSize(12).setFont('helvetica', 'bold');
+      addText('Education', { fontSize: 12 });
+      y += 2;
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
+      activeResume.education.forEach(edu => {
+        doc.setFontSize(10).setFont('helvetica', 'bold');
+        addText(`${edu.degree}, ${edu.fieldOfStudy}`, { fontSize: 10 });
+        doc.setFontSize(9).setFont('helvetica', 'normal');
+        addText(`${edu.institution} | ${edu.startDate} - ${edu.endDate}`, { fontSize: 9 });
+        y += 10;
+      });
+    }
+
+    // --- Skills ---
+    if (activeResume.skills?.length > 0) {
+        doc.setFontSize(12).setFont('helvetica', 'bold');
+        addText('Skills', { fontSize: 12 });
+        y += 2;
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 15;
+        doc.setFontSize(10).setFont('helvetica', 'normal');
+        addText(activeResume.skills.map(s => s.name).join(', '), { fontSize: 10 });
+    }
+  
+    doc.save(`${activeResume.versionName.replace(/\s+/g, "_")}_ResumAI.pdf`);
+    toast({ title: "PDF Downloaded", description: "Your resume has been downloaded.", });
   };
 
   const handlePhotoUpload = async (
@@ -509,7 +498,7 @@ export default function ResumeEditorPage() {
                   <SkillsForm
                     resume={activeResume}
                     updateField={handleUpdateField}
-                    jobDescriptionForAISkills={jobDescription}
+                    jobDescriptionForAISkills={activeResume.meta.jobDescription || ''}
                   />
                   <LanguagesForm
                     resume={activeResume}
@@ -599,12 +588,21 @@ export default function ResumeEditorPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
+                      <div className="space-y-2">
+                          <Label htmlFor="job-position">Target Job Position</Label>
+                          <Input
+                              id="job-position"
+                              value={activeResume.meta.jobPosition || ''}
+                              onChange={(e) => handleUpdateField("meta.jobPosition", e.target.value)}
+                              placeholder="e.g., Software Engineer"
+                          />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="job-description">Job Description</Label>
                         <Textarea
                           id="job-description"
-                          value={jobDescription}
-                          onChange={(e) => setJobDescription(e.target.value)}
+                          value={activeResume.meta.jobDescription || ''}
+                          onChange={(e) => handleUpdateField("meta.jobDescription", e.target.value)}
                           placeholder="Paste job description here for targeted suggestions..."
                           rows={5}
                         />

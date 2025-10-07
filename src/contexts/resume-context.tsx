@@ -79,13 +79,14 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const newId = uuidv4();
-    const newResume: ResumeData = {
-      ...defaultResumeData,
-      id: newId,
-      versionName: `Untitled Resume ${resumes.length + 1}`,
-      contact: { ...defaultResumeData.contact, name: user.displayName || '', email: user.email || '' },
-      meta: { ...defaultResumeData.meta, lastModified: new Date().toISOString() },
-    };
+    // Deep copy to ensure all nested objects are new, then overwrite specific fields.
+    const newResume: ResumeData = JSON.parse(JSON.stringify(defaultResumeData));
+    newResume.id = newId;
+    newResume.versionName = `Untitled Resume ${resumes.length + 1}`;
+    newResume.contact.name = user.displayName || '';
+    newResume.contact.email = user.email || '';
+    newResume.contact.photoUrl = user.photoURL || '';
+    newResume.meta.lastModified = new Date().toISOString();
     
     try {
         const resumeRef = doc(db, 'users', user.uid, 'resumes', newId);
@@ -108,12 +109,26 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     const resumeToActivate = resumes.find(r => r.id === id);
-    setActiveResume(resumeToActivate || null);
+    if(resumeToActivate) {
+        setActiveResume(resumeToActivate);
+    } else {
+        // This case can happen if a resume is newly created and the main `resumes` array hasn't been re-fetched.
+        // We'll trust the ID and set a partial active resume, which will be filled out once `loadResumes` runs.
+        setActiveResume({ ...defaultResumeData, id: id, versionName: 'Loading...' });
+    }
   }, [resumes]);
 
   const updateActiveResume = useCallback((updater: (prev: ResumeData | null) => ResumeData) => {
     setActiveResume(prev => {
       const updated = updater(prev);
+       // Also update the main resumes list so changes are reflected immediately.
+        setResumes(currentResumes => {
+            const exists = currentResumes.some(r => r.id === updated.id);
+            if (exists) {
+                return currentResumes.map(r => r.id === updated.id ? updated : r);
+            }
+            return [...currentResumes, updated];
+        });
       return { ...updated, meta: { ...updated.meta, lastModified: new Date().toISOString() } };
     });
   }, []);
@@ -149,8 +164,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
         const resumeRef = doc(db, 'users', user.uid, 'resumes', id);
         await deleteDoc(resumeRef);
         
-        const updatedResumes = resumes.filter(r => r.id !== id);
-        setResumes(updatedResumes);
+        setResumes(prevResumes => prevResumes.filter(r => r.id !== id));
         
         if (activeResume?.id === id) {
           setActiveResume(null);
@@ -160,7 +174,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error deleting resume from Firestore:", error);
         toast({ title: "Delete Error", description: "The resume could not be deleted.", variant: "destructive"});
     }
-  }, [resumes, activeResume, user, toast]);
+  }, [activeResume?.id, user, toast]);
 
   const duplicateResume = useCallback(async (id: string): Promise<ResumeData | null> => {
     if (!user || !db) {
@@ -185,7 +199,7 @@ export const ResumeProvider = ({ children }: { children: React.ReactNode }) => {
 
     const newId = uuidv4();
     const duplicatedResume: ResumeData = {
-      ...resumeToDuplicate,
+      ...JSON.parse(JSON.stringify(resumeToDuplicate)), // Deep copy
       id: newId,
       versionName: `${resumeToDuplicate.versionName} (Copy)`,
       meta: { ...resumeToDuplicate.meta, lastModified: new Date().toISOString() },

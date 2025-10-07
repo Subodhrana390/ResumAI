@@ -15,6 +15,10 @@ const ResumeImprovementSuggestionsInputSchema = z.object({
   resumeContent: z
     .string()
     .describe('The full text content of the resume to be improved.'),
+  jobPosition: z
+    .string()
+    .optional()
+    .describe('The target job position or title.'),
   jobDescription: z
     .string()
     .optional()
@@ -61,6 +65,10 @@ Analyze the provided resume content. If a job description is included, pay close
 
 Resume Content:
 {{{resumeContent}}}
+
+{{#if jobPosition}}
+Target Job Position: {{{jobPosition}}}
+{{/if}}
 
 {{#if jobDescription}}
 Job Description for ATS keyword analysis and tailoring:
